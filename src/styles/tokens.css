@@ -34,12 +34,21 @@
   --ink: #2c2a26;
   --ink-soft: #4a4640;
 
+  /* ---- The room -------------------------------------------------------
+     The wall hangs in a room, not on a black void. Warm dark taupe reads as
+     a dim interior and makes paper colours sing; pure black just flattens
+     them. --room-tint is overridden per surface so the ambient light picks
+     up the colour of whatever the wall is made of. */
+  --room-base: #2a2521;
+  --room-deep: #1a1714;
+  --room-tint: 214 168 108;
+
   /* ---- UI chrome ------------------------------------------------------ */
-  --ui-bg: #16151a;
-  --ui-panel: #1e1d24;
-  --ui-line: #32313b;
-  --ui-text: #e9e7ef;
-  --ui-dim: #9a97a8;
+  --ui-bg: #211d1a;
+  --ui-panel: #2a2522;
+  --ui-line: #3d3630;
+  --ui-text: #f0ebe3;
+  --ui-dim: #a89e93;
   --ui-accent: #f0b429;
   --radius: 8px;
 }

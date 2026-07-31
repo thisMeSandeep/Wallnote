@@ -6,6 +6,7 @@
   touch-action: none;
   cursor: grab;
   user-select: none;
+  pointer-events: auto;
   /* Position is driven by transform, set inline. Transitioning it would
      fight the direct-DOM writes during a drag, so only shadow animates. */
   transition: box-shadow 0.16s ease, filter 0.16s ease;

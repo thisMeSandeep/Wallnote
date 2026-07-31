@@ -10,6 +10,8 @@
   display: flex;
   flex: 1;
   min-height: 0;
+  /* Each surface tints the room it hangs in — see stage--* below. */
+  transition: background-color 0.5s ease;
 }
 
 /* The frame is the measured box; useWallScale fits the wall inside it. */
@@ -18,6 +20,51 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  background:
+    /* floor bounce: a faint warm lift along the bottom edge */
+    linear-gradient(0deg, rgb(var(--room-tint) / 0.07), transparent 22%),
+    /* the room's light source, up and to the left to match --light-* */
+      radial-gradient(
+        130% 110% at 30% -10%,
+        rgb(var(--room-tint) / 0.16) 0%,
+        rgb(var(--room-tint) / 0.05) 35%,
+        transparent 65%
+      ),
+    linear-gradient(165deg, var(--room-base), var(--room-deep));
+  transition: background 0.5s ease;
+}
+
+/* A soft pool of light behind the wall so it reads as lit, not pasted on. */
+.room__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    58% 58% at 50% 46%,
+    rgb(var(--room-tint) / 0.13) 0%,
+    transparent 72%
+  );
+  transition: background 0.5s ease;
+}
+
+/* Room ambience picks up the colour of the wall material. */
+.stage--cork {
+  --room-tint: 214 158 92;
+}
+.stage--whiteboard {
+  --room-tint: 190 210 226;
+}
+.stage--chalkboard {
+  --room-tint: 130 176 158;
+}
+.stage--brick {
+  --room-tint: 208 126 100;
+}
+.stage--wood {
+  --room-tint: 206 154 92;
+}
+.stage--plaster {
+  --room-tint: 226 212 186;
 }
 
 .wall {
@@ -27,10 +74,14 @@
   transform-origin: center center;
   isolation: isolate;
   border-radius: 3px;
-  /* The wall itself is a lit object sitting in the room. */
+  /* The wall is a real object standing off the room behind it: a tight
+     contact shadow, a broad cast shadow, and a faint rim where the light
+     catches its top edge. */
   box-shadow:
-    0 24px 60px -12px rgb(0 0 0 / 0.6),
-    0 4px 12px rgb(0 0 0 / 0.4);
+    0 2px 6px rgb(0 0 0 / 0.45),
+    0 30px 70px -14px rgb(0 0 0 / 0.62),
+    0 0 0 1px rgb(255 255 255 / 0.04),
+    inset 0 1px 0 rgb(255 255 255 / 0.07);
 }
 
 .wall__surface,
@@ -53,6 +104,17 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
+/* Notes live in their own stacking context. Their z-index comes from an
+   ever-incrementing counter, so without this they would eventually climb past
+   the vignette and frame above. Scoped here, they can't. */
+.wall__notes {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  /* Let clicks fall through to the surface; notes re-enable it themselves. */
+  pointer-events: none;
+}
+
 /* Light falls from above-left, so the far corners sit in shade. */
 .wall__vignette {
   z-index: 900;
@@ -65,8 +127,12 @@
   );
 }
 
+/* Sits above the notes, so it must only ever paint its border. A `background`
+   here — even one declared `border-box` — fills the whole element and hides
+   every note behind it. Use `border-image` for frame gradients instead. */
 .wall__frame {
   z-index: 950;
+  background: none;
 }
 
 .toast {

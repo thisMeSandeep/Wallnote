@@ -15,7 +15,7 @@ import { WALL_H, WALL_W, type Note as NoteModel, type SurfaceType } from './type
 
 export default function App() {
   const { state, notes, dispatch, commit, setText, canUndo, canRedo } = useWallStore();
-  const { frameRef, scale } = useWallScale();
+  const { frameRef, scale, offsetY } = useWallScale();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -161,10 +161,11 @@ export default function App() {
         onImport={handleImport}
       />
 
-      <main className="stage">
+      <main className={`stage stage--${state.surface}`}>
         <Wall
           surface={state.surface}
           scale={scale}
+          offsetY={offsetY}
           frameRef={frameRef}
           onBackgroundPointerDown={() => {
             setSelectedId(null);
@@ -192,7 +193,15 @@ export default function App() {
           ))}
         </Wall>
 
-        <StylePanel note={selected} onStyle={handleStyle} onDelete={handleDelete} />
+        <StylePanel
+          note={selected}
+          onStyle={handleStyle}
+          onDelete={handleDelete}
+          onClose={() => {
+            setSelectedId(null);
+            setEditingId(null);
+          }}
+        />
       </main>
 
       {menu && (
