@@ -1,0 +1,195 @@
+.note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: center center;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  /* Position is driven by transform, set inline. Transitioning it would
+     fight the direct-DOM writes during a drag, so only shadow animates. */
+  transition: box-shadow 0.16s ease, filter 0.16s ease;
+  z-index: 1;
+}
+
+.note.is-lifted {
+  cursor: grabbing;
+  transition: none;
+  z-index: 800;
+}
+
+.note.is-peeling {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+
+.note.is-editing {
+  cursor: text;
+}
+
+/* The paper layer carries colour, texture and shadow so the note element
+   itself stays a clean positioning box. */
+.note__paper {
+  position: absolute;
+  inset: 0;
+  background: var(--paper-base, var(--canary-base));
+  box-shadow: var(--shadow-contact), var(--shadow-ambient);
+  z-index: 0;
+}
+
+.note.is-lifted .note__paper {
+  box-shadow: var(--shadow-lifted);
+}
+
+.note__body {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 16px 16px 14px;
+  overflow: hidden;
+  color: var(--paper-ink, var(--ink));
+  font-family: var(--note-font, 'Caveat', cursive);
+  font-size: calc(25px * var(--font-scale, 1));
+  line-height: 1.28;
+  white-space: pre-wrap;
+  word-break: break-word;
+  outline: none;
+  cursor: inherit;
+}
+
+.note.is-editing .note__body {
+  cursor: text;
+  user-select: text;
+}
+
+.note__hint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper-ink, var(--ink));
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+/* Selection ring and grab handle counter-scale so they stay a constant
+   physical size no matter how the wall is fitted to the viewport. */
+.note.is-selected::after {
+  content: '';
+  position: absolute;
+  inset: calc(-4px * var(--inv-scale, 1));
+  border: calc(2px * var(--inv-scale, 1)) solid var(--ui-accent);
+  border-radius: calc(3px * var(--inv-scale, 1));
+  pointer-events: none;
+  z-index: 5;
+}
+
+.note__handle {
+  position: absolute;
+  right: calc(-7px * var(--inv-scale, 1));
+  bottom: calc(-7px * var(--inv-scale, 1));
+  width: calc(14px * var(--inv-scale, 1));
+  height: calc(14px * var(--inv-scale, 1));
+  background: var(--ui-accent);
+  border: calc(2px * var(--inv-scale, 1)) solid #1a1a1a;
+  border-radius: calc(3px * var(--inv-scale, 1));
+  cursor: nwse-resize;
+  touch-action: none;
+  z-index: 6;
+}
+
+/* ---- Fasteners ------------------------------------------------------- */
+
+.fastener {
+  position: absolute;
+  left: 50%;
+  z-index: 4;
+  pointer-events: none;
+  transform-origin: center top;
+}
+
+/* Pushpin: a domed head with its own highlight, sitting above a needle. */
+.fastener--pin {
+  top: -9px;
+  width: 22px;
+  height: 22px;
+}
+
+.pin__dome {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.85), transparent 45%),
+    radial-gradient(circle at 62% 72%, rgb(0 0 0 / 0.32), transparent 55%),
+    var(--pin-color, #d8412f);
+  box-shadow: var(--shadow-contact);
+}
+
+.pin__needle {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 3px;
+  height: 10px;
+  margin-left: -1.5px;
+  background: linear-gradient(180deg, #9aa0a6, #5c6166);
+  border-radius: 0 0 1px 1px;
+}
+
+.pin__shadow {
+  position: absolute;
+  left: 52%;
+  top: 68%;
+  width: 16px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--shadow-tint) / 0.35);
+  filter: blur(3px);
+}
+
+/* Washi tape: translucent so the paper and wall read through it. */
+.fastener--tape {
+  top: -13px;
+  width: 86px;
+  height: 27px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.16) 0 6px,
+      transparent 6px 12px
+    ),
+    linear-gradient(180deg, rgb(236 232 218 / 0.72), rgb(214 208 190 / 0.66));
+  box-shadow: var(--shadow-contact);
+  /* Ragged torn ends rather than a clean rectangle. */
+  clip-path: polygon(
+    3% 0%, 12% 6%, 24% 1%, 38% 7%, 52% 1%, 66% 6%, 79% 1%, 91% 7%, 100% 2%,
+    97% 100%, 86% 94%, 73% 99%, 60% 93%, 47% 99%, 33% 93%, 20% 99%, 8% 94%, 0% 98%
+  );
+}
+
+/* Magnet: a flat disc with a rim highlight. */
+.fastener--magnet {
+  top: -10px;
+  width: 26px;
+  height: 26px;
+}
+
+.magnet__body {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 30%, rgb(255 255 255 / 0.55), transparent 50%),
+    linear-gradient(160deg, #4a4f57, #23262b);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 255 255 / 0.14),
+    var(--shadow-contact),
+    var(--shadow-ambient);
+}

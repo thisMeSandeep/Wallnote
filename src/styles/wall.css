@@ -1,0 +1,92 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+.stage {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The frame is the measured box; useWallScale fits the wall inside it. */
+.frame {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wall {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  isolation: isolate;
+  border-radius: 3px;
+  /* The wall itself is a lit object sitting in the room. */
+  box-shadow:
+    0 24px 60px -12px rgb(0 0 0 / 0.6),
+    0 4px 12px rgb(0 0 0 / 0.4);
+}
+
+.wall__surface,
+.wall__grain,
+.wall__vignette,
+.wall__frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wall__surface {
+  pointer-events: auto;
+}
+
+/* Fine material noise so surfaces read as substance rather than gradient. */
+.wall__grain {
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* Light falls from above-left, so the far corners sit in shade. */
+.wall__vignette {
+  z-index: 900;
+  background: radial-gradient(
+    120% 100% at 32% 12%,
+    rgb(255 255 255 / 0.1) 0%,
+    rgb(255 255 255 / 0) 42%,
+    rgb(0 0 0 / 0.16) 82%,
+    rgb(0 0 0 / 0.3) 100%
+  );
+}
+
+.wall__frame {
+  z-index: 950;
+}
+
+.toast {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgb(20 19 24 / 0.94);
+  border: 1px solid var(--ui-line);
+  color: var(--ui-text);
+  font-size: 13px;
+  z-index: 5000;
+  animation: toast-in 0.18s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}

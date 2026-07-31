@@ -1,0 +1,45 @@
+:root {
+  /* ---- Lighting -------------------------------------------------------
+     One light source for the whole app, up and slightly to the left. Every
+     shadow in every stylesheet derives from these. Inconsistent shadow
+     directions are the single biggest realism killer, so nothing hardcodes
+     its own offsets. */
+  --light-x: -1px;
+  --light-y: 3px;
+  --shadow-tint: 22 18 14;
+  --shadow-contact: 0 1px 2px rgb(var(--shadow-tint) / 0.42);
+  --shadow-ambient: 0 10px 18px -6px rgb(var(--shadow-tint) / 0.34);
+  --shadow-lifted:
+    0 2px 4px rgb(var(--shadow-tint) / 0.28), 0 26px 40px -12px rgb(var(--shadow-tint) / 0.45);
+
+  /* ---- Paper colours --------------------------------------------------
+     Each paper carries a base, a slightly darker edge for the gum strip and
+     fold shading, and an ink colour picked for contrast on that stock. */
+  --canary-base: #fdf07a;
+  --canary-deep: #ecdc55;
+  --mint-base: #c8ecc9;
+  --mint-deep: #a9d8ac;
+  --sky-base: #bfe0f5;
+  --sky-deep: #9dc9e8;
+  --blush-base: #fbd0dd;
+  --blush-deep: #eeb2c5;
+  --coral-base: #ffc7a6;
+  --coral-deep: #f2a97f;
+  --lilac-base: #dcd0f2;
+  --lilac-deep: #c2b1e4;
+  --white-base: #fbfaf6;
+  --white-deep: #e6e3da;
+  --kraft-base: #d9b98c;
+  --kraft-deep: #c2a074;
+  --ink: #2c2a26;
+  --ink-soft: #4a4640;
+
+  /* ---- UI chrome ------------------------------------------------------ */
+  --ui-bg: #16151a;
+  --ui-panel: #1e1d24;
+  --ui-line: #32313b;
+  --ui-text: #e9e7ef;
+  --ui-dim: #9a97a8;
+  --ui-accent: #f0b429;
+  --radius: 8px;
+}

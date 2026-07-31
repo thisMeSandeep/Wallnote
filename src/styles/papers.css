@@ -1,0 +1,183 @@
+/* ============================================================
+   Colour is set by a `color-*` class, stock by a `note--*` class, silhouette
+   by `note--shape-*`. They compose freely — a torn kraft strip and a ruled
+   index strip are both valid — so nothing here assumes a pairing.
+   ============================================================ */
+
+.color-canary {
+  --paper-base: var(--canary-base);
+  --paper-deep: var(--canary-deep);
+}
+.color-mint {
+  --paper-base: var(--mint-base);
+  --paper-deep: var(--mint-deep);
+}
+.color-sky {
+  --paper-base: var(--sky-base);
+  --paper-deep: var(--sky-deep);
+}
+.color-blush {
+  --paper-base: var(--blush-base);
+  --paper-deep: var(--blush-deep);
+}
+.color-coral {
+  --paper-base: var(--coral-base);
+  --paper-deep: var(--coral-deep);
+}
+.color-lilac {
+  --paper-base: var(--lilac-base);
+  --paper-deep: var(--lilac-deep);
+}
+.color-white {
+  --paper-base: var(--white-base);
+  --paper-deep: var(--white-deep);
+}
+.color-kraft {
+  --paper-base: var(--kraft-base);
+  --paper-deep: var(--kraft-deep);
+  --paper-ink: #3a2c1c;
+}
+
+/* ---- Fonts ----------------------------------------------------------- */
+.font-caveat {
+  --note-font: 'Caveat', cursive;
+  --font-baseline: 1.12;
+}
+.font-patrick {
+  --note-font: 'Patrick Hand', cursive;
+}
+.font-kalam {
+  --note-font: 'Kalam', cursive;
+}
+.font-architects {
+  --note-font: 'Architects Daughter', cursive;
+}
+
+/* Caveat runs small for its point size; nudge it up so all four fonts read
+   at a comparable weight on the wall. */
+.font-caveat .note__body {
+  font-size: calc(28px * var(--font-scale, 1));
+}
+
+/* ---- Stocks ---------------------------------------------------------- */
+
+/* Sticky: gum strip across the top, faint sheen down the sheet. */
+.note--sticky .note__paper {
+  background-image:
+    linear-gradient(180deg, rgb(0 0 0 / 0.07) 0 14%, transparent 14%),
+    linear-gradient(122deg, rgb(255 255 255 / 0.4), transparent 55%);
+}
+
+/* Index card: ruled lines plus a red margin rule near the top. */
+.note--index .note__paper {
+  background-image:
+    linear-gradient(180deg, transparent 0 26px, rgb(198 74 74 / 0.42) 26px 27px, transparent 27px),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 25px,
+      rgb(80 110 150 / 0.26) 25px 26px
+    );
+  background-position: 0 0, 0 27px;
+}
+
+/* Notebook: ruled, with a torn top edge and punch holes down the left. */
+.note--notebook .note__paper {
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 25px,
+      rgb(80 110 150 / 0.28) 25px 26px
+    );
+  background-position: 0 18px;
+  -webkit-mask-image: var(--torn-top);
+  mask-image: var(--torn-top);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.note--notebook {
+  --torn-top: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 100 100'%3E%3Cpath d='M0 4 L4 1.5 L9 4.5 L14 1 L19 4 L24 1.8 L29 4.6 L34 1.4 L39 4.2 L44 1.2 L49 4.4 L54 1.6 L59 4 L64 1.3 L69 4.5 L74 1.7 L79 4.2 L84 1.1 L89 4.6 L94 1.5 L100 3.8 L100 100 L0 100 Z' fill='white'/%3E%3C/svg%3E");
+}
+
+.note--notebook .note__body {
+  padding-top: 22px;
+}
+
+/* Kraft: fibrous brown stock, slightly rougher noise than the others. */
+.note--kraft .note__paper {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23f)' opacity='0.28'/%3E%3C/svg%3E"),
+    linear-gradient(122deg, rgb(255 255 255 / 0.22), transparent 60%);
+}
+
+/* Graph: fine grid, heavier line every fifth square. */
+.note--graph .note__paper {
+  background-image:
+    repeating-linear-gradient(90deg, rgb(90 120 150 / 0.34) 0 1px, transparent 1px 50px),
+    repeating-linear-gradient(180deg, rgb(90 120 150 / 0.34) 0 1px, transparent 1px 50px),
+    repeating-linear-gradient(90deg, rgb(90 120 150 / 0.16) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(180deg, rgb(90 120 150 / 0.16) 0 1px, transparent 1px 10px);
+}
+
+/* Torn scrap: irregular outline on every edge, no clean corners. */
+.note--scrap .note__paper {
+  -webkit-mask-image: var(--torn-all);
+  mask-image: var(--torn-all);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  background-image: linear-gradient(122deg, rgb(255 255 255 / 0.3), transparent 60%);
+}
+
+.note--scrap {
+  --torn-all: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 100 100'%3E%3Cpath d='M2.5 3 L12 0.8 L23 3.2 L35 0.6 L47 3 L58 0.9 L70 3.4 L82 1 L93 3.2 L99 6 L97 17 L99.4 29 L96.8 41 L99 53 L97 65 L99.2 77 L96.6 88 L98 96 L88 99.2 L76 96.8 L64 99.4 L52 97 L40 99.2 L28 96.6 L16 99 L5 97 L1 92 L3 80 L0.8 68 L3.2 56 L0.6 44 L3 32 L0.9 20 L2 9 Z' fill='white'/%3E%3C/svg%3E");
+}
+
+/* ---- Shapes ---------------------------------------------------------- */
+
+.note--shape-round .note__paper {
+  border-radius: 50%;
+}
+
+.note--shape-round .note__body {
+  padding: 15%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.note--shape-strip .note__body {
+  display: grid;
+  align-items: center;
+  padding: 10px 18px;
+}
+
+/* Tag: clipped top corners and a punched hole the fastener sits in. */
+.note--shape-tag .note__paper {
+  clip-path: polygon(0 8%, 50% 0, 100% 8%, 100% 100%, 0 100%);
+}
+
+.note--shape-tag .note__body {
+  padding-top: 40px;
+}
+
+.note--shape-tag::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  width: 13px;
+  height: 13px;
+  margin-left: -6.5px;
+  border-radius: 50%;
+  background: rgb(var(--shadow-tint) / 0.5);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.5);
+  z-index: 3;
+}
+
+/* Bare notes get a lifted corner instead of a fastener, so they still read
+   as attached to something. */
+.note--sticky .note__paper,
+.note--index .note__paper,
+.note--graph .note__paper {
+  border-radius: 1px;
+}
