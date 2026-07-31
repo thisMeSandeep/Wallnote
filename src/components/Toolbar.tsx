@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { sound } from '../lib/audio';
+import { Wordmark } from './Logo';
 import { ShortcutsHelp } from './ShortcutsHelp';
 import { ROOMS, SURFACES, type RoomKey, type SurfaceType } from '../types';
 
@@ -46,8 +47,7 @@ export function Toolbar({
   return (
     <header className="toolbar">
       <div className="toolbar__brand">
-        <span className="toolbar__mark" aria-hidden />
-        <span>Wallnut</span>
+        <Wordmark />
       </div>
 
       <div className="toolbar__group toolbar__surfaces" role="group" aria-label="Wall surface">

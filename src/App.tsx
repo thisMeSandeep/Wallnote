@@ -181,7 +181,7 @@ export default function App() {
     async (file: File) => {
       const loaded = await importWall(file);
       if (!loaded) {
-        flash("That file didn't look like a Wallnut wall");
+        flash("That file didn't look like a Wallnote wall");
         return;
       }
       commit();

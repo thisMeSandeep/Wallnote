@@ -12,7 +12,9 @@ import {
   type WallState,
 } from '../types';
 
-const KEY = 'wallnut:v1';
+const KEY = 'wallnote:v1';
+/** Read-only fallbacks from before the rename, newest first. */
+const LEGACY_KEYS = ['wallnut:v1'];
 
 const keysOf = <T extends { key: string }>(list: T[]) => new Set(list.map((i) => i.key));
 const SURFACE_KEYS = keysOf(SURFACES);
@@ -197,7 +199,17 @@ export function starterWall(): WallState {
 
 export function load(): WallState {
   try {
-    const raw = localStorage.getItem(KEY);
+    let raw = localStorage.getItem(KEY);
+
+    // Adopt a wall saved under the old name. The legacy entry is left in place
+    // as a backup — the next save writes to the current key regardless.
+    if (!raw) {
+      for (const legacy of LEGACY_KEYS) {
+        raw = localStorage.getItem(legacy);
+        if (raw) break;
+      }
+    }
+
     if (!raw) return starterWall();
     const migrated = migrate(JSON.parse(raw));
     return migrated ?? starterWall();
@@ -230,7 +242,7 @@ export function exportWall(state: WallState): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `wallnut-${stamp}.json`;
+  a.download = `wallnote-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

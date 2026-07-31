@@ -17,7 +17,8 @@ export type SoundName =
   | 'magnet'
   | 'ui'; // toggles and small chrome
 
-const STORAGE_KEY = 'wallnut:sound';
+const STORAGE_KEY = 'wallnote:sound';
+const LEGACY_STORAGE_KEY = 'wallnut:sound';
 
 /** Random in [min, max) — used to keep repeated sounds from being identical. */
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
@@ -31,7 +32,7 @@ class SoundEngine {
   constructor() {
     let stored: string | null = null;
     try {
-      stored = localStorage.getItem(STORAGE_KEY);
+      stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
     } catch {
       // Storage disabled; fall back to the default.
     }

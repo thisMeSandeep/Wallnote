@@ -20,13 +20,21 @@
   letter-spacing: 0.01em;
 }
 
-.toolbar__mark {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  background: var(--canary-base);
-  transform: rotate(-6deg);
-  box-shadow: 0 2px 5px rgb(0 0 0 / 0.4);
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Sized and nudged to sit on the baseline where the "o" would be. */
+.brand__acorn {
+  width: 0.95em;
+  height: 0.95em;
+  margin: 0 0.01em;
+  transform: translateY(0.13em) rotate(-8deg);
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.45));
 }
 
 .toolbar__group {
