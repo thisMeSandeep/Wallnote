@@ -35,6 +35,83 @@
   flex: 1;
 }
 
+/* Room-colour picker. The dot previews the choice so the labels don't have
+   to carry all the meaning. */
+.toolbar__select {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px 0 8px;
+  height: 32px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ui-line);
+  background: #332c27;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.toolbar__select:hover {
+  background: #3f3730;
+  border-color: #524940;
+}
+
+.toolbar__select select {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 13px;
+  padding-right: 14px;
+  cursor: pointer;
+  outline: none;
+  /* Chevron drawn in the background so the native arrow can stay hidden. */
+  background-image: linear-gradient(45deg, transparent 50%, var(--ui-dim) 50%),
+    linear-gradient(135deg, var(--ui-dim) 50%, transparent 50%);
+  background-position: right 4px center, right 0px center;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+
+.toolbar__select select option {
+  background: #2a2522;
+  color: var(--ui-text);
+}
+
+.toolbar__roomdot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  outline: 1px solid rgb(255 255 255 / 0.16);
+  background: linear-gradient(150deg, #2a2521, #1a1714);
+}
+
+.room-dot--auto {
+  /* Split disc: the room follows whatever the wall is. */
+  background: conic-gradient(from 220deg, #c68f52, #f2f4f5, #2c3a35, #9e5540, #c68f52);
+}
+.room-dot--taupe {
+  background: linear-gradient(150deg, #3a332c, #1a1714);
+}
+.room-dot--slate {
+  background: linear-gradient(150deg, #38414f, #14171d);
+}
+.room-dot--forest {
+  background: linear-gradient(150deg, #2c3d34, #131b17);
+}
+.room-dot--plum {
+  background: linear-gradient(150deg, #3d2f47, #19131f);
+}
+.room-dot--clay {
+  background: linear-gradient(150deg, #46332c, #1d1512);
+}
+.room-dot--ink {
+  background: linear-gradient(150deg, #33333d, #141419);
+}
+.room-dot--sand {
+  background: linear-gradient(150deg, #6b5c49, #2f281f);
+}
+
 .toolbar__count {
   font-size: 12px;
   color: var(--ui-dim);

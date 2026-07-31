@@ -1,12 +1,14 @@
 import { useRef } from 'react';
-import { SURFACES, type SurfaceType } from '../types';
+import { ROOMS, SURFACES, type RoomKey, type SurfaceType } from '../types';
 
 interface Props {
   surface: SurfaceType;
+  room: RoomKey;
   canUndo: boolean;
   canRedo: boolean;
   noteCount: number;
   onSurface: (s: SurfaceType) => void;
+  onRoom: (r: RoomKey) => void;
   onAdd: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -16,10 +18,12 @@ interface Props {
 
 export function Toolbar({
   surface,
+  room,
   canUndo,
   canRedo,
   noteCount,
   onSurface,
+  onRoom,
   onAdd,
   onUndo,
   onRedo,
@@ -47,6 +51,21 @@ export function Toolbar({
           />
         ))}
       </div>
+
+      <label className="toolbar__select" title="Colour of the room behind the wall">
+        <span className={`toolbar__roomdot room-dot--${room}`} aria-hidden />
+        <select
+          value={room}
+          onChange={(e) => onRoom(e.target.value as RoomKey)}
+          aria-label="Room colour"
+        >
+          {ROOMS.map((r) => (
+            <option key={r.key} value={r.key}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <div className="toolbar__spacer" />
 

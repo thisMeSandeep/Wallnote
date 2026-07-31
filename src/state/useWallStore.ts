@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { newId } from '../lib/id';
 import { load, save } from '../lib/storage';
-import { SHAPES, type Note, type SurfaceType, type WallState } from '../types';
+import { SHAPES, type Note, type RoomKey, type SurfaceType, type WallState } from '../types';
 
 export type Action =
   | { type: 'ADD_NOTE'; x: number; y: number; seed?: Partial<Note> }
@@ -14,6 +14,7 @@ export type Action =
   | { type: 'DUPLICATE'; id: string }
   | { type: 'DELETE_NOTE'; id: string }
   | { type: 'SET_SURFACE'; surface: SurfaceType }
+  | { type: 'SET_ROOM'; room: RoomKey }
   | { type: 'LOAD_STATE'; state: WallState };
 
 interface History {
@@ -120,6 +121,9 @@ function reduce(state: WallState, action: Action): WallState {
 
     case 'SET_SURFACE':
       return { ...state, surface: action.surface };
+
+    case 'SET_ROOM':
+      return { ...state, room: action.room };
 
     case 'LOAD_STATE':
       return action.state;

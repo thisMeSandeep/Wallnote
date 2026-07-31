@@ -67,6 +67,53 @@
   --room-tint: 226 212 186;
 }
 
+/* ---- Explicit room colours -------------------------------------------
+   These must stay below the .stage--<surface> rules above: same specificity,
+   so source order decides, and an explicit pick has to beat the automatic
+   one. 'auto' declares nothing, which is what lets the surface tint show. */
+.stage--room-taupe {
+  --room-base: #2a2521;
+  --room-deep: #1a1714;
+  --room-tint: 214 168 108;
+}
+
+.stage--room-slate {
+  --room-base: #242932; /* cool blue-grey, good under whiteboard */
+  --room-deep: #14171d;
+  --room-tint: 150 178 214;
+}
+
+.stage--room-forest {
+  --room-base: #1f2a25;
+  --room-deep: #131b17;
+  --room-tint: 132 190 152;
+}
+
+.stage--room-plum {
+  --room-base: #2a2130;
+  --room-deep: #19131f;
+  --room-tint: 192 152 212;
+}
+
+.stage--room-clay {
+  --room-base: #302420;
+  --room-deep: #1d1512;
+  --room-tint: 222 140 108;
+}
+
+.stage--room-ink {
+  --room-base: #23232a;
+  --room-deep: #141419;
+  --room-tint: 172 178 198;
+}
+
+/* The one bright room — for people who'd rather not work in a dim one. */
+.stage--room-sand {
+  --room-base: #4a4034;
+  --room-deep: #2f281f;
+  --room-tint: 240 216 172;
+}
+
 .wall {
   position: absolute;
   top: 50%;

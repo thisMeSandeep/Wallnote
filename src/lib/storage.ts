@@ -4,6 +4,7 @@ import {
   FASTENERS,
   FONTS,
   PAPERS,
+  ROOMS,
   SHAPES,
   SURFACES,
   type Note,
@@ -14,6 +15,7 @@ const KEY = 'wallnut:v1';
 
 const keysOf = <T extends { key: string }>(list: T[]) => new Set(list.map((i) => i.key));
 const SURFACE_KEYS = keysOf(SURFACES);
+const ROOM_KEYS = keysOf(ROOMS);
 const PAPER_KEYS = keysOf(PAPERS);
 const SHAPE_KEYS = keysOf(SHAPES);
 const FASTENER_KEYS = keysOf(FASTENERS);
@@ -71,6 +73,9 @@ export function migrate(raw: unknown): WallState | null {
       return {
         version: 1,
         surface: pick(r.surface, SURFACE_KEYS, 'cork' as const),
+        // Walls saved before rooms existed simply fall back to 'auto', which
+        // is the behaviour they already had.
+        room: pick(r.room, ROOM_KEYS, 'auto' as const),
         notes,
         nextZ: Math.max(1, num(r.nextZ, notes.length + 1)),
       };
@@ -158,7 +163,7 @@ export function starterWall(): WallState {
       font: 'architects',
     },
   ];
-  return { version: 1, surface: 'cork', notes, nextZ: notes.length + 1 };
+  return { version: 1, surface: 'cork', room: 'auto', notes, nextZ: notes.length + 1 };
 }
 
 export function load(): WallState {

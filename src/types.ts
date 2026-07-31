@@ -1,4 +1,13 @@
 export type SurfaceType = 'cork' | 'whiteboard' | 'chalkboard' | 'brick' | 'wood' | 'plaster';
+export type RoomKey =
+  | 'auto'
+  | 'taupe'
+  | 'slate'
+  | 'forest'
+  | 'plum'
+  | 'clay'
+  | 'ink'
+  | 'sand';
 export type PaperType = 'sticky' | 'index' | 'notebook' | 'kraft' | 'graph' | 'scrap';
 export type NoteShape = 'square' | 'portrait' | 'wide' | 'strip' | 'round' | 'tag';
 export type Fastener = 'pin' | 'tape' | 'magnet' | 'none';
@@ -39,6 +48,8 @@ export interface Note {
 export interface WallState {
   version: 1;
   surface: SurfaceType;
+  /** Colour of the room the wall hangs in. 'auto' follows the wall material. */
+  room: RoomKey;
   notes: Note[];
   nextZ: number;
 }
@@ -54,6 +65,17 @@ export const SURFACES: { key: SurfaceType; label: string }[] = [
   { key: 'brick', label: 'Brick' },
   { key: 'wood', label: 'Wood' },
   { key: 'plaster', label: 'Plaster' },
+];
+
+export const ROOMS: { key: RoomKey; label: string }[] = [
+  { key: 'auto', label: 'Match the wall' },
+  { key: 'taupe', label: 'Warm taupe' },
+  { key: 'slate', label: 'Cool slate' },
+  { key: 'forest', label: 'Forest' },
+  { key: 'plum', label: 'Plum' },
+  { key: 'clay', label: 'Clay' },
+  { key: 'ink', label: 'Ink' },
+  { key: 'sand', label: 'Sand (light)' },
 ];
 
 export const PAPERS: { key: PaperType; label: string }[] = [

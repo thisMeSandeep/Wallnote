@@ -11,7 +11,13 @@ import { useWallScale } from './hooks/useWallScale';
 import { newId } from './lib/id';
 import { exportWall, importWall } from './lib/storage';
 import { useWallStore } from './state/useWallStore';
-import { WALL_H, WALL_W, type Note as NoteModel, type SurfaceType } from './types';
+import {
+  WALL_H,
+  WALL_W,
+  type Note as NoteModel,
+  type RoomKey,
+  type SurfaceType,
+} from './types';
 
 export default function App() {
   const { state, notes, dispatch, commit, setText, canUndo, canRedo } = useWallStore();
@@ -150,10 +156,12 @@ export default function App() {
     <div className="app">
       <Toolbar
         surface={state.surface}
+        room={state.room}
         canUndo={canUndo}
         canRedo={canRedo}
         noteCount={state.notes.length}
         onSurface={(s: SurfaceType) => dispatch({ type: 'SET_SURFACE', surface: s })}
+        onRoom={(r: RoomKey) => dispatch({ type: 'SET_ROOM', room: r })}
         onAdd={() => addNoteAt(WALL_W / 2 + (Math.random() * 160 - 80), WALL_H / 2 + (Math.random() * 120 - 60))}
         onUndo={() => dispatch({ type: 'UNDO' })}
         onRedo={() => dispatch({ type: 'REDO' })}
@@ -161,7 +169,7 @@ export default function App() {
         onImport={handleImport}
       />
 
-      <main className={`stage stage--${state.surface}`}>
+      <main className={`stage stage--${state.surface} stage--room-${state.room}`}>
         <Wall
           surface={state.surface}
           scale={scale}
