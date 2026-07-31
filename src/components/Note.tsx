@@ -7,11 +7,7 @@ interface Props {
   selected: boolean;
   editing: boolean;
   onPointerDown: (e: React.PointerEvent, note: NoteModel) => void;
-  onPointerMove: (e: React.PointerEvent) => void;
-  onPointerUp: (e: React.PointerEvent) => void;
   onResizeDown: (e: React.PointerEvent, note: NoteModel) => void;
-  onResizeMove: (e: React.PointerEvent) => void;
-  onResizeUp: (e: React.PointerEvent) => void;
   onSelect: (id: string) => void;
   onStartEdit: (id: string) => void;
   onText: (id: string, text: string) => void;
@@ -23,11 +19,7 @@ function NoteImpl({
   selected,
   editing,
   onPointerDown,
-  onPointerMove,
-  onPointerUp,
   onResizeDown,
-  onResizeMove,
-  onResizeUp,
   onSelect,
   onStartEdit,
   onText,
@@ -80,8 +72,6 @@ function NoteImpl({
         onSelect(note.id);
         onPointerDown(e, note);
       }}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
       onDoubleClick={(e) => {
         e.stopPropagation();
         onStartEdit(note.id);
@@ -107,8 +97,6 @@ function NoteImpl({
         <span
           className="note__handle"
           onPointerDown={(e) => onResizeDown(e, note)}
-          onPointerMove={onResizeMove}
-          onPointerUp={onResizeUp}
           aria-hidden
         />
       )}

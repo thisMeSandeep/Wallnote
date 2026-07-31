@@ -37,18 +37,26 @@ export default function App() {
 
   const selected = notes.find((n) => n.id === selectedId) ?? null;
 
-  const handleGrab = useCallback(
+  /** Selecting also brings the note to the front, as grabbing paper would. */
+  const handleSelect = useCallback(
     (id: string) => {
-      commit(); // one undo entry for the whole drag
+      setSelectedId(id);
       dispatch({ type: 'RAISE', id });
     },
-    [commit, dispatch],
+    [dispatch],
   );
 
   const drag = useDragNote({
     scale,
-    onGrab: handleGrab,
-    onDrop: useCallback((id, x, y) => dispatch({ type: 'MOVE_NOTE', id, x, y }), [dispatch]),
+    // commit() runs here rather than on grab so a click that moves nothing
+    // doesn't leave an empty step on the undo stack.
+    onDrop: useCallback(
+      (id: string, x: number, y: number) => {
+        commit();
+        dispatch({ type: 'MOVE_NOTE', id, x, y });
+      },
+      [commit, dispatch],
+    ),
     onDropOff: useCallback(
       (id: string) => {
         dispatch({ type: 'DELETE_NOTE', id });
@@ -188,12 +196,8 @@ export default function App() {
               selected={note.id === selectedId}
               editing={note.id === editingId}
               onPointerDown={drag.onPointerDown}
-              onPointerMove={drag.onPointerMove}
-              onPointerUp={drag.onPointerUp}
               onResizeDown={resize.onPointerDown}
-              onResizeMove={resize.onPointerMove}
-              onResizeUp={resize.onPointerUp}
-              onSelect={setSelectedId}
+              onSelect={handleSelect}
               onStartEdit={setEditingId}
               onText={setText}
               onContextMenu={handleContextMenu}

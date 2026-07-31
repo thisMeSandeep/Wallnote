@@ -17,6 +17,12 @@ body {
   overflow: hidden;
 }
 
+/* Set for the duration of a drag or resize. */
+body.is-dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+
 button {
   font: inherit;
   color: inherit;

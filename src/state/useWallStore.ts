@@ -27,10 +27,17 @@ const HISTORY_CAP = 50;
 
 /**
  * Actions that shouldn't each get their own undo entry. Drag/resize push a
- * single snapshot on pointerup (see commit()), and text edits are coalesced by
- * a debounce in the SET_TEXT path.
+ * single snapshot on release (see commit()), and text edits are coalesced by a
+ * debounce in the SET_TEXT path. RAISE fires on every click, so leaving it
+ * undoable would bury real edits under a pile of z-order bumps.
  */
-const TRANSIENT: Action['type'][] = ['MOVE_NOTE', 'RESIZE_NOTE', 'SET_TEXT', 'LOAD_STATE'];
+const TRANSIENT: Action['type'][] = [
+  'MOVE_NOTE',
+  'RESIZE_NOTE',
+  'SET_TEXT',
+  'RAISE',
+  'LOAD_STATE',
+];
 
 function tilt(): number {
   return Math.round((Math.random() * 6 - 3) * 10) / 10;
