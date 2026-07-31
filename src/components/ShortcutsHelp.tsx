@@ -28,6 +28,8 @@ const POINTER: { action: string; label: string }[] = [
   { action: 'Right-click note', label: 'Duplicate, send to back, remove' },
 ];
 
+const NOTES = 'Sound effects are off by default — the speaker button turns them on.';
+
 export function ShortcutsHelp() {
   return (
     <div className="help">
@@ -63,6 +65,8 @@ export function ShortcutsHelp() {
             </li>
           ))}
         </ul>
+
+        <p className="help__note">{NOTES}</p>
       </div>
     </div>
   );

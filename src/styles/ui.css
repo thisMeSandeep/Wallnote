@@ -212,6 +212,29 @@
   background: #3a2424;
 }
 
+.iconbtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ui-line);
+  background: #332c27;
+  color: var(--ui-dim);
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.iconbtn:hover {
+  background: #3f3730;
+  color: var(--ui-text);
+}
+
+.iconbtn.is-on {
+  color: var(--ui-accent);
+  border-color: #5c4a1e;
+  background: #3a3320;
+}
+
 /* ---- Shortcuts help -------------------------------------------------- */
 
 .help {
@@ -323,6 +346,15 @@
 .help__label {
   color: var(--ui-dim);
   line-height: 1.35;
+}
+
+.help__note {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ui-line);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ui-dim);
 }
 
 .help__pop kbd {

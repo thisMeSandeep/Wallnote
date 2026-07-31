@@ -1,5 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { COLORS, FASTENERS, FONTS, PAPERS, SHAPES, type Note } from '../types';
+import { sound, type SoundName } from '../lib/audio';
+import { COLORS, FASTENERS, FONTS, PAPERS, SHAPES, type Fastener, type Note } from '../types';
+
+/** Each fastener sounds like the thing it is; bare paper just rustles. */
+const FASTENER_SOUND: Record<Fastener, SoundName> = {
+  pin: 'pin',
+  tape: 'tape',
+  magnet: 'magnet',
+  none: 'lift',
+};
 
 interface Props {
   note: Note | null;
@@ -94,7 +103,10 @@ export function StylePanel({ note, onStyle, onDelete, onClose }: Props) {
                   <button
                     key={f.key}
                     className={`chip ${shown.fastener === f.key ? 'is-active' : ''}`}
-                    onClick={() => set({ fastener: f.key })}
+                    onClick={() => {
+                      sound.play(FASTENER_SOUND[f.key]);
+                      set({ fastener: f.key });
+                    }}
                   >
                     {f.label}
                   </button>

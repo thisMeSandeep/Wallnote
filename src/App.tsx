@@ -8,6 +8,7 @@ import { useDragNote } from './hooks/useDragNote';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useResizeNote } from './hooks/useResizeNote';
 import { useWallScale } from './hooks/useWallScale';
+import { sound } from './lib/audio';
 import { newId } from './lib/id';
 import { exportWall, importWall } from './lib/storage';
 import { useWallStore } from './state/useWallStore';
@@ -98,6 +99,7 @@ export default function App() {
       dispatch({ type: 'ADD_NOTE', x, y, seed: { id } });
       setSelectedId(id);
       setEditingId(id);
+      sound.play('stick');
     },
     [dispatch],
   );
@@ -119,6 +121,7 @@ export default function App() {
 
   const handleDelete = useCallback(
     (id: string) => {
+      sound.play('peel');
       dispatch({ type: 'DELETE_NOTE', id });
       setSelectedId((cur) => (cur === id ? null : cur));
     },

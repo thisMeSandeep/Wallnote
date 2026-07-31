@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { sound } from '../lib/audio';
 import { clampToWall, isOffWall, toWallUnits } from '../lib/geometry';
 import type { Note } from '../types';
 
@@ -47,7 +48,12 @@ export function useDragNote({ scale, onDrop, onDropOff }: Args) {
 
   const apply = useCallback((a: Active, clientX: number, clientY: number) => {
     const { dx, dy } = toWallUnits(clientX - a.startX, clientY - a.startY, scaleRef.current);
-    if (!a.moved && Math.hypot(dx, dy) > 2) a.moved = true;
+    if (!a.moved && Math.hypot(dx, dy) > 2) {
+      a.moved = true;
+      // Only once the note actually leaves its spot — a click that merely
+      // selects shouldn't rustle.
+      sound.play('lift');
+    }
 
     const raw = { x: a.originX + dx, y: a.originY + dy };
     const off = isOffWall(raw.x, raw.y, a.note.w, a.note.h);
@@ -75,8 +81,13 @@ export function useDragNote({ scale, onDrop, onDropOff }: Args) {
       a.el.style.transform = `translate(${a.originX}px, ${a.originY}px) rotate(${a.note.rotation}deg)`;
       return;
     }
-    if (a.off) cbs.current.onDropOff(a.id);
-    else if (a.moved) cbs.current.onDrop(a.id, a.x, a.y);
+    if (a.off) {
+      sound.play('peel');
+      cbs.current.onDropOff(a.id);
+    } else if (a.moved) {
+      sound.play('place');
+      cbs.current.onDrop(a.id, a.x, a.y);
+    }
   }, []);
 
   useEffect(() => {
