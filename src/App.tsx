@@ -5,6 +5,7 @@ import { Note } from './components/Note';
 import { StylePanel } from './components/StylePanel';
 import { ToolPalette } from './components/ToolPalette';
 import { Toolbar } from './components/Toolbar';
+import { UpdatePrompt } from './components/UpdatePrompt';
 import { Wall } from './components/Wall';
 import { useDragNote } from './hooks/useDragNote';
 import { useDraw } from './hooks/useDraw';
@@ -312,6 +313,8 @@ export default function App() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+
+      <UpdatePrompt />
     </div>
   );
 }

@@ -2,12 +2,15 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 
-import '@fontsource/caveat/400.css';
-import '@fontsource/caveat/600.css';
-import '@fontsource/patrick-hand/400.css';
-import '@fontsource/kalam/400.css';
-import '@fontsource/kalam/700.css';
-import '@fontsource/architects-daughter/400.css';
+// Latin subsets only. The full packages ship Cyrillic and Devanagari too,
+// which nothing here renders and which the service worker would then have to
+// precache — roughly a megabyte of fonts nobody sees.
+import '@fontsource/caveat/latin-400.css';
+import '@fontsource/caveat/latin-600.css';
+import '@fontsource/patrick-hand/latin-400.css';
+import '@fontsource/kalam/latin-400.css';
+import '@fontsource/kalam/latin-700.css';
+import '@fontsource/architects-daughter/latin-400.css';
 
 import './styles/reset.css';
 import './styles/tokens.css';

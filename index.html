@@ -2,9 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover so the wall reaches the edges on notched screens;
+         the toolbar pads itself back out with env(safe-area-inset-*). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+    />
     <title>Wallnote</title>
     <meta name="description" content="A wall you stick notes on — and draw on." />
+    <meta name="theme-color" content="#211d1a" />
+
+    <!-- iOS ignores the web manifest for home-screen installs. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Wallnote" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- The same acorn as the wordmark, inlined so there's no asset to fetch. -->
     <link
       rel="icon"

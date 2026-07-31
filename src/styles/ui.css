@@ -2,7 +2,10 @@
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 10px 16px;
+  /* Safe-area insets keep the toolbar clear of a notch or rounded corner when
+     the app is installed and running standalone. */
+  padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px
+    calc(16px + env(safe-area-inset-left));
   background: var(--ui-panel);
   border-bottom: 1px solid var(--ui-line);
   flex-shrink: 0;
@@ -553,6 +556,49 @@
 
 .menu__danger {
   color: #ff8f8f;
+}
+
+/* ---- Service worker pill --------------------------------------------- */
+
+.swpill {
+  position: fixed;
+  left: calc(16px + env(safe-area-inset-left));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px 9px 15px;
+  border-radius: 999px;
+  background: rgb(42 37 34 / 0.96);
+  border: 1px solid var(--ui-line);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.5);
+  color: var(--ui-text);
+  font-size: 12.5px;
+  animation: toast-in 0.2s ease-out;
+}
+
+.swpill__go {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--ui-accent);
+  color: #1a1505;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.swpill__x {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--ui-dim);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.swpill__x:hover {
+  background: #423931;
+  color: var(--ui-text);
 }
 
 @media (max-width: 900px) {
