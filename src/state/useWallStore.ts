@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { newId } from '../lib/id';
 import { load, save } from '../lib/storage';
-import { SHAPES, type Note, type RoomKey, type SurfaceType, type WallState } from '../types';
+import {
+  SHAPES,
+  type Note,
+  type RoomKey,
+  type Stroke,
+  type SurfaceType,
+  type WallState,
+} from '../types';
 
 export type Action =
   | { type: 'ADD_NOTE'; x: number; y: number; seed?: Partial<Note> }
@@ -15,6 +22,9 @@ export type Action =
   | { type: 'DELETE_NOTE'; id: string }
   | { type: 'SET_SURFACE'; surface: SurfaceType }
   | { type: 'SET_ROOM'; room: RoomKey }
+  | { type: 'ADD_STROKE'; stroke: Stroke }
+  | { type: 'ERASE_STROKES'; ids: string[] }
+  | { type: 'CLEAR_INK' }
   | { type: 'LOAD_STATE'; state: WallState };
 
 interface History {
@@ -23,7 +33,9 @@ interface History {
   future: WallState[];
 }
 
-const HISTORY_CAP = 50;
+/* Raised once drawing landed: each stroke is its own entry, so a short sketch
+   would otherwise evict every note edit behind it. */
+const HISTORY_CAP = 120;
 
 /**
  * Actions that shouldn't each get their own undo entry. Drag/resize push a
@@ -132,6 +144,17 @@ function reduce(state: WallState, action: Action): WallState {
     case 'SET_ROOM':
       return { ...state, room: action.room };
 
+    case 'ADD_STROKE':
+      return { ...state, strokes: [...state.strokes, action.stroke] };
+
+    case 'ERASE_STROKES': {
+      const gone = new Set(action.ids);
+      return { ...state, strokes: state.strokes.filter((s) => !gone.has(s.id)) };
+    }
+
+    case 'CLEAR_INK':
+      return state.strokes.length === 0 ? state : { ...state, strokes: [] };
+
     case 'LOAD_STATE':
       return action.state;
   }
@@ -188,9 +211,10 @@ export function useWallStore() {
   }));
 
   const state = history.present;
+  const [storageFull, setStorageFull] = useState(false);
 
   useEffect(() => {
-    save(state);
+    save(state, () => setStorageFull(true));
   }, [state]);
 
   const textTimer = useRef<number | undefined>(undefined);
@@ -227,5 +251,7 @@ export function useWallStore() {
     setText,
     canUndo: history.past.length > 0,
     canRedo: history.future.length > 0,
+    storageFull,
+    dismissStorageWarning: useCallback(() => setStorageFull(false), []),
   };
 }

@@ -14,7 +14,10 @@ const KEYS: { keys: string[]; label: string }[] = [
   { keys: [MOD, 'Z'], label: 'Undo' },
   { keys: [MOD, '⇧', 'Z'], label: 'Redo' },
   { keys: [DEL], label: 'Take selected note off the wall' },
-  { keys: ['Esc'], label: 'Finish writing / close menu' },
+  { keys: ['V'], label: 'Hand — move and edit notes' },
+  { keys: ['P'], label: 'Pencil — draw on the wall' },
+  { keys: ['E'], label: 'Eraser — rub out strokes' },
+  { keys: ['Esc'], label: 'Back to the hand / close menu' },
 ];
 
 const POINTER: { action: string; label: string }[] = [
@@ -26,6 +29,8 @@ const POINTER: { action: string; label: string }[] = [
   { action: 'Click note', label: 'Open the style panel' },
   { action: 'Click bare wall', label: 'Close the panel' },
   { action: 'Right-click note', label: 'Duplicate, send to back, remove' },
+  { action: 'Drag with pencil', label: 'Draw — notes stay on top of the ink' },
+  { action: 'Drag with eraser', label: 'Rub out whole strokes' },
 ];
 
 const NOTES = 'Sound effects are off by default — the speaker button turns them on.';

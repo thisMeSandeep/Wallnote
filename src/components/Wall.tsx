@@ -1,10 +1,12 @@
 import type { ReactNode, RefObject } from 'react';
-import { WALL_H, WALL_W, type SurfaceType } from '../types';
+import { WALL_H, WALL_W, type SurfaceType, type ToolMode } from '../types';
 
 interface Props {
   surface: SurfaceType;
   scale: number;
   offsetY: number;
+  mode: ToolMode;
+  ink: ReactNode;
   frameRef: RefObject<HTMLDivElement>;
   onBackgroundPointerDown: () => void;
   onBackgroundDoubleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -15,6 +17,8 @@ export function Wall({
   surface,
   scale,
   offsetY,
+  mode,
+  ink,
   frameRef,
   onBackgroundPointerDown,
   onBackgroundDoubleClick,
@@ -24,7 +28,7 @@ export function Wall({
     <div className="frame" ref={frameRef}>
       <div className="room__glow" aria-hidden />
       <div
-        className={`wall wall--${surface}`}
+        className={`wall wall--${surface} ${mode !== 'hand' ? `is-inking is-${mode}` : ''}`}
         style={
           {
             width: WALL_W,
@@ -46,6 +50,7 @@ export function Wall({
       >
         <div className="wall__surface" data-wallbg="1" aria-hidden />
         <div className="wall__grain" data-wallbg="1" aria-hidden />
+        {ink}
         <div className="wall__notes">{children}</div>
         <div className="wall__vignette" aria-hidden />
         <div className="wall__frame" aria-hidden />

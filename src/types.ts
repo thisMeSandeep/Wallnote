@@ -45,14 +45,58 @@ export interface Note {
   updatedAt: number;
 }
 
+export type ToolMode = 'hand' | 'pencil' | 'eraser';
+
+/** A freehand mark on the wall itself, underneath the notes. */
+export interface Stroke {
+  id: string;
+  /** Flat [x0,y0,x1,y1,...] in wall units — half the JSON of {x,y} objects. */
+  points: number[];
+  color: string;
+  /** Wall units, so line weight scales with everything else. */
+  width: number;
+}
+
 export interface WallState {
   version: 1;
   surface: SurfaceType;
   /** Colour of the room the wall hangs in. 'auto' follows the wall material. */
   room: RoomKey;
   notes: Note[];
+  strokes: Stroke[];
   nextZ: number;
 }
+
+export const PEN_COLORS: { key: string; label: string; value: string }[] = [
+  { key: 'graphite', label: 'Graphite', value: '#33302b' },
+  { key: 'chalk', label: 'Chalk', value: '#f2efe6' },
+  { key: 'red', label: 'Red', value: '#c0392b' },
+  { key: 'blue', label: 'Blue', value: '#2f6da4' },
+  { key: 'green', label: 'Green', value: '#2c7a4b' },
+  { key: 'amber', label: 'Amber', value: '#e0a021' },
+];
+
+export const PEN_WIDTHS: { label: string; value: number }[] = [
+  { label: 'Fine', value: 2.5 },
+  { label: 'Medium', value: 5 },
+  { label: 'Broad', value: 9 },
+];
+
+/** The instrument you'd reach for on each material. */
+export const SURFACE_PEN: Record<SurfaceType, string> = {
+  cork: '#33302b',
+  whiteboard: '#2f6da4',
+  chalkboard: '#f2efe6',
+  brick: '#f2efe6',
+  wood: '#33302b',
+  plaster: '#33302b',
+};
+
+/** How close the eraser has to pass to a stroke to take it, in wall units. */
+export const ERASER_RADIUS = 14;
+
+/** Samples closer together than this are dropped — see lib/ink.ts. */
+export const MIN_SAMPLE_GAP = 2;
 
 /** The wall is always this many logical units. Positions never get re-mapped. */
 export const WALL_W = 1600;

@@ -1,10 +1,13 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ContextMenu, type MenuState } from './components/ContextMenu';
+import { InkLayer } from './components/InkLayer';
 import { Note } from './components/Note';
 import { StylePanel } from './components/StylePanel';
+import { ToolPalette } from './components/ToolPalette';
 import { Toolbar } from './components/Toolbar';
 import { Wall } from './components/Wall';
 import { useDragNote } from './hooks/useDragNote';
+import { useDraw } from './hooks/useDraw';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useResizeNote } from './hooks/useResizeNote';
 import { useWallScale } from './hooks/useWallScale';
@@ -13,15 +16,29 @@ import { newId } from './lib/id';
 import { exportWall, importWall } from './lib/storage';
 import { useWallStore } from './state/useWallStore';
 import {
+  PEN_WIDTHS,
+  SURFACE_PEN,
   WALL_H,
   WALL_W,
   type Note as NoteModel,
   type RoomKey,
+  type Stroke,
   type SurfaceType,
+  type ToolMode,
 } from './types';
 
 export default function App() {
-  const { state, notes, dispatch, commit, setText, canUndo, canRedo } = useWallStore();
+  const {
+    state,
+    notes,
+    dispatch,
+    commit,
+    setText,
+    canUndo,
+    canRedo,
+    storageFull,
+    dismissStorageWarning,
+  } = useWallStore();
   const { frameRef, scale, offsetY } = useWallScale();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -29,6 +46,16 @@ export default function App() {
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
+
+  const [mode, setMode] = useState<ToolMode>('hand');
+  const [penColor, setPenColor] = useState(SURFACE_PEN[state.surface]);
+  const [penWidth, setPenWidth] = useState(PEN_WIDTHS[1].value);
+
+  // Reach for the instrument that suits the material: chalk on a chalkboard,
+  // marker on a whiteboard. An explicit pick sticks until the surface changes.
+  useEffect(() => {
+    setPenColor(SURFACE_PEN[state.surface]);
+  }, [state.surface]);
 
   const flash = useCallback((msg: string) => {
     setToast(msg);
@@ -79,6 +106,18 @@ export default function App() {
     ),
   });
 
+  const draw = useDraw({
+    mode,
+    color: penColor,
+    width: penWidth,
+    strokes: state.strokes,
+    onStroke: useCallback(
+      (stroke: Stroke) => dispatch({ type: 'ADD_STROKE', stroke }),
+      [dispatch],
+    ),
+    onErase: useCallback((ids: string[]) => dispatch({ type: 'ERASE_STROKES', ids }), [dispatch]),
+  });
+
   /** Turn a screen-space click into wall units. */
   const wallPointFromEvent = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -106,12 +145,15 @@ export default function App() {
 
   const handleWallDoubleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      // Drawing is a flurry of fast clicks — without this, sketching would
+      // carpet the wall in empty notes.
+      if (mode !== 'hand') return;
       const target = e.target as HTMLElement;
       if (target.closest('.note')) return;
       const { x, y } = wallPointFromEvent(e);
       addNoteAt(x, y);
     },
-    [addNoteAt, wallPointFromEvent],
+    [addNoteAt, mode, wallPointFromEvent],
   );
 
   const handleStyle = useCallback(
@@ -160,8 +202,25 @@ export default function App() {
     onEscape: useCallback(() => {
       setEditingId(null);
       setMenu(null);
+      setMode('hand');
+    }, []),
+    onTool: useCallback((next: ToolMode) => {
+      setMode(next);
+      // Picking up a pencil implies you're done fiddling with a note.
+      if (next !== 'hand') {
+        setSelectedId(null);
+        setEditingId(null);
+      }
+      sound.play('ui');
     }, []),
   });
+
+  useEffect(() => {
+    if (storageFull) {
+      flash('Out of browser storage — export your wall, some changes are not being saved');
+      dismissStorageWarning();
+    }
+  }, [storageFull, flash, dismissStorageWarning]);
 
   return (
     <div className="app">
@@ -181,10 +240,33 @@ export default function App() {
       />
 
       <main className={`stage stage--${state.surface} stage--room-${state.room}`}>
+        <ToolPalette
+          mode={mode}
+          color={penColor}
+          width={penWidth}
+          hasInk={state.strokes.length > 0}
+          onMode={(m) => {
+            setMode(m);
+            if (m !== 'hand') {
+              setSelectedId(null);
+              setEditingId(null);
+            }
+            sound.play('ui');
+          }}
+          onColor={setPenColor}
+          onWidth={setPenWidth}
+          onClear={() => {
+            dispatch({ type: 'CLEAR_INK' });
+            sound.play('peel');
+          }}
+        />
+
         <Wall
           surface={state.surface}
           scale={scale}
           offsetY={offsetY}
+          mode={mode}
+          ink={<InkLayer strokes={state.strokes} onPointerDown={draw.onPointerDown} />}
           frameRef={frameRef}
           onBackgroundPointerDown={() => {
             setSelectedId(null);

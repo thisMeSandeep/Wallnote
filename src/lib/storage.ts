@@ -8,6 +8,7 @@ import {
   SHAPES,
   SURFACES,
   type Note,
+  type Stroke,
   type WallState,
 } from '../types';
 
@@ -56,6 +57,23 @@ function coerceNote(raw: unknown, index: number): Note | null {
   };
 }
 
+function coerceStroke(raw: unknown): Stroke | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (!Array.isArray(r.points)) return null;
+
+  const points = r.points.filter((n): n is number => typeof n === 'number' && Number.isFinite(n));
+  // Coordinates come in pairs; an odd count means the data is corrupt.
+  if (points.length < 2 || points.length % 2 !== 0) return null;
+
+  return {
+    id: typeof r.id === 'string' && r.id ? r.id : newId(),
+    points,
+    color: typeof r.color === 'string' ? r.color : '#33302b',
+    width: num(r.width, 5),
+  };
+}
+
 /**
  * Versioned upgrade path. Only v1 exists today, but retrofitting this once
  * people have data in localStorage is the painful path.
@@ -77,6 +95,10 @@ export function migrate(raw: unknown): WallState | null {
         // is the behaviour they already had.
         room: pick(r.room, ROOM_KEYS, 'auto' as const),
         notes,
+        // Walls saved before the pencil existed simply have no ink.
+        strokes: Array.isArray(r.strokes)
+          ? r.strokes.map(coerceStroke).filter((s): s is Stroke => s !== null)
+          : [],
         nextZ: Math.max(1, num(r.nextZ, notes.length + 1)),
       };
     }
@@ -163,7 +185,14 @@ export function starterWall(): WallState {
       font: 'architects',
     },
   ];
-  return { version: 1, surface: 'cork', room: 'auto', notes, nextZ: notes.length + 1 };
+  return {
+    version: 1,
+    surface: 'cork',
+    room: 'auto',
+    notes,
+    strokes: [],
+    nextZ: notes.length + 1,
+  };
 }
 
 export function load(): WallState {
@@ -179,13 +208,18 @@ export function load(): WallState {
 
 let saveTimer: number | undefined;
 
-export function save(state: WallState): void {
+/**
+ * Ink is the first thing here that can grow without bound, so a failed write
+ * has to be visible. Silently dropping it would mean losing a drawing session
+ * with no warning at all.
+ */
+export function save(state: WallState, onError?: () => void): void {
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
     } catch {
-      // Quota exceeded or storage disabled — the wall still works this session.
+      onError?.();
     }
   }, 400);
 }
