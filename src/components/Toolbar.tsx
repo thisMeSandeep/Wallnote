@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { ShortcutsHelp } from './ShortcutsHelp';
 import { ROOMS, SURFACES, type RoomKey, type SurfaceType } from '../types';
 
 interface Props {
@@ -102,6 +103,8 @@ export function Toolbar({
       </div>
 
       <span className="toolbar__count">{noteCount} notes</span>
+
+      <ShortcutsHelp />
     </header>
   );
 }

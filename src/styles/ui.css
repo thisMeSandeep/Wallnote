@@ -6,6 +6,10 @@
   background: var(--ui-panel);
   border-bottom: 1px solid var(--ui-line);
   flex-shrink: 0;
+  /* The stage follows in the DOM, so the toolbar needs its own layer for the
+     shortcuts popover to hang over the wall. */
+  position: relative;
+  z-index: 100;
 }
 
 .toolbar__brand {
@@ -206,6 +210,134 @@
 
 .btn--danger:hover {
   background: #3a2424;
+}
+
+/* ---- Shortcuts help -------------------------------------------------- */
+
+.help {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.help__btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--ui-line);
+  background: #332c27;
+  color: var(--ui-dim);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.help:hover .help__btn,
+.help__btn:focus-visible {
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: #1a1505;
+}
+
+.help__pop {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 310px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #2f2926;
+  border: 1px solid var(--ui-line);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+  /* Hidden by default; hover or keyboard focus reveals it. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none;
+}
+
+.help:hover .help__pop,
+.help:focus-within .help__pop {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Little arrow pointing back at the button. */
+.help__pop::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  background: #2f2926;
+  border-left: 1px solid var(--ui-line);
+  border-top: 1px solid var(--ui-line);
+  transform: rotate(45deg);
+}
+
+.help__pop h4 {
+  margin: 0 0 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ui-dim);
+}
+
+.help__pop h4 + ul {
+  margin-bottom: 14px;
+}
+
+.help__pop ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help__pop li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.help__keys {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+  width: 92px;
+}
+
+.help__action {
+  flex-shrink: 0;
+  width: 92px;
+  color: var(--ui-text);
+  font-size: 11px;
+}
+
+.help__label {
+  color: var(--ui-dim);
+  line-height: 1.35;
+}
+
+.help__pop kbd {
+  display: inline-block;
+  min-width: 19px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #423931;
+  border: 1px solid #524940;
+  border-bottom-width: 2px;
+  color: var(--ui-text);
+  font-family: inherit;
+  font-size: 10.5px;
+  text-align: center;
+  line-height: 1.2;
 }
 
 /* ---- Style panel ----------------------------------------------------- */
