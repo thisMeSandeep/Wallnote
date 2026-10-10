@@ -132,6 +132,27 @@
   --torn-all: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 100 100'%3E%3Cpath d='M2.5 3 L12 0.8 L23 3.2 L35 0.6 L47 3 L58 0.9 L70 3.4 L82 1 L93 3.2 L99 6 L97 17 L99.4 29 L96.8 41 L99 53 L97 65 L99.2 77 L96.6 88 L98 96 L88 99.2 L76 96.8 L64 99.4 L52 97 L40 99.2 L28 96.6 L16 99 L5 97 L1 92 L3 80 L0.8 68 L3.2 56 L0.6 44 L3 32 L0.9 20 L2 9 Z' fill='white'/%3E%3C/svg%3E");
 }
 
+/* Glow: phosphorescent stock. In the light it's a pale, slightly chalky sheet
+   tinted by its colour; in a dark room it's lifted above the darkness (see
+   WallScreen) and shines in that colour. */
+.color-canary { --glow: #d6ff6e; }
+.color-mint { --glow: #7dffaa; }
+.color-sky { --glow: #74e6ff; }
+.color-blush { --glow: #ff9fd2; }
+.color-coral { --glow: #ffae70; }
+.color-lilac { --glow: #c2a2ff; }
+.color-white { --glow: #e6fff1; }
+.color-kraft { --glow: #ffd08a; }
+
+.note--glow .note__paper {
+  background: color-mix(in srgb, var(--glow) 32%, #f3f4ea);
+  background-image:
+    radial-gradient(rgb(255 255 255 / 0.5) 0.6px, transparent 1px),
+    linear-gradient(122deg, rgb(255 255 255 / 0.35), transparent 60%);
+  background-size: 6px 6px, 100% 100%;
+  border-radius: 2px;
+}
+
 /* ---- Shapes ---------------------------------------------------------- */
 
 .note--shape-round .note__paper {

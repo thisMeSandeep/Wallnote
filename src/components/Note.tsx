@@ -49,6 +49,7 @@ function NoteImpl({
 
   return (
     <div
+      data-note-id={note.id}
       className={[
         'note',
         `note--${note.paper}`,

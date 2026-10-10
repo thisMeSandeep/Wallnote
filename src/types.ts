@@ -8,7 +8,7 @@ export type RoomKey =
   | 'clay'
   | 'ink'
   | 'sand';
-export type PaperType = 'sticky' | 'index' | 'notebook' | 'kraft' | 'graph' | 'scrap';
+export type PaperType = 'sticky' | 'index' | 'notebook' | 'kraft' | 'graph' | 'scrap' | 'glow';
 export type NoteShape = 'square' | 'portrait' | 'wide' | 'strip' | 'round' | 'tag';
 export type Fastener = 'pin' | 'tape' | 'magnet' | 'none';
 export type FontKey = 'caveat' | 'patrick' | 'kalam' | 'architects';
@@ -45,7 +45,7 @@ export interface Note {
   updatedAt: number;
 }
 
-export type ToolMode = 'hand' | 'pencil' | 'eraser';
+export type ToolMode = 'hand' | 'pencil' | 'eraser' | 'string';
 
 /** A freehand mark on the wall itself, underneath the notes. */
 export interface Stroke {
@@ -57,6 +57,13 @@ export interface Stroke {
   width: number;
 }
 
+/** Red yarn tied between two notes' fasteners. */
+export interface Link {
+  id: string;
+  a: string;
+  b: string;
+}
+
 export interface WallState {
   version: 1;
   surface: SurfaceType;
@@ -64,7 +71,34 @@ export interface WallState {
   room: RoomKey;
   notes: Note[];
   strokes: Stroke[];
+  links: Link[];
+  /** Notes taken off the wall, newest first. Fished back out from the bin. */
+  binned: Note[];
   nextZ: number;
+}
+
+/** The bin is emptied from the bottom once it holds this many. */
+export const BIN_CAP = 30;
+
+/** What the wall picker needs to know about a wall without loading all of it. */
+export interface WallMeta {
+  id: string;
+  name: string;
+  /** Mirrored from the wall itself so the picker can show a swatch. */
+  surface: SurfaceType;
+  noteCount: number;
+  /**
+   * The bulb in this wall's room. Kept here rather than in WallState so it
+   * stays out of undo history — Cmd+Z should never flip the lights.
+   */
+  lightOn: boolean;
+  createdAt: number;
+}
+
+export interface WallIndex {
+  version: 1;
+  activeId: string;
+  walls: WallMeta[];
 }
 
 export const PEN_COLORS: { key: string; label: string; value: string }[] = [
@@ -129,6 +163,7 @@ export const PAPERS: { key: PaperType; label: string }[] = [
   { key: 'kraft', label: 'Kraft' },
   { key: 'graph', label: 'Graph' },
   { key: 'scrap', label: 'Torn scrap' },
+  { key: 'glow', label: 'Glow' },
 ];
 
 export const SHAPES: { key: NoteShape; label: string; w: number; h: number }[] = [

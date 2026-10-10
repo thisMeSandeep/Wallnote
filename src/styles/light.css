@@ -1,0 +1,340 @@
+/* ---- The room's light -------------------------------------------------
+   One bulb per room. Lit, the wall looks exactly as it always has — the
+   existing shadows already fall away from where the bulb hangs. Off, the wall
+   is left with whatever comes through the window off to the right, and that
+   follows the clock (lib/daylight.ts sets the --amb-* variables): daylight at
+   noon, low gold at sunset, faint cool moonlight at night, where white paper
+   still reads and colours mostly don't. */
+
+.frame {
+  /* Night defaults, overwritten inline by the daylight model. */
+  --amb-near: 128 140 178;
+  --amb-mid: 72 82 116;
+  --amb-far: 34 40 60;
+  --amb-room: 0.9;
+  --amb-room-tint: 20 26 44;
+  --amb-y: 18%;
+  /* Torch beam radius, in screen pixels. */
+  --torch-r: 150px;
+}
+
+/* The room behind the wall. Sits under .wall in DOM order. */
+.room__dark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    70% 90% at 100% var(--amb-y),
+    rgb(var(--amb-room-tint) / calc(var(--amb-room) * 0.82)),
+    rgb(4 5 9 / var(--amb-room)) 70%
+  );
+  opacity: 0;
+  transition: opacity 0.14s ease-in;
+}
+
+/* The wall and everything on it, ink and notes included. Multiply keeps the
+   paper's own texture and lets light stock stay lightest, the way it does in
+   a dark room. Above the frame (950) so the border darkens with it. */
+.wall__shade {
+  position: absolute;
+  inset: 0;
+  z-index: 990;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  background: radial-gradient(
+    110% 130% at 106% var(--amb-y),
+    rgb(var(--amb-near)) 0%,
+    rgb(var(--amb-mid)) 38%,
+    rgb(var(--amb-far)) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.14s ease-in;
+}
+
+.frame.is-dark .room__dark,
+.frame.is-dark .wall__shade {
+  opacity: 1;
+}
+
+/* ---- Torch ---------------------------------------------------------------
+   At night the pointer is a torch: a soft hole cut in both darkness layers
+   (positions written by useTorch), plus a faint warm hot-spot. The wall's
+   coordinates are wall units, so its radius is counter-scaled. */
+.frame[data-torch] .room__dark {
+  -webkit-mask-image: radial-gradient(
+    circle var(--torch-r) at var(--torch-fx) var(--torch-fy),
+    transparent 0%,
+    rgb(0 0 0 / 0.2) 55%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--torch-r) at var(--torch-fx) var(--torch-fy),
+    transparent 0%,
+    rgb(0 0 0 / 0.2) 55%,
+    #000 100%
+  );
+}
+
+.frame[data-torch] .wall__shade {
+  -webkit-mask-image: radial-gradient(
+    circle calc(var(--torch-r) * var(--inv-scale, 1)) at var(--torch-wx) var(--torch-wy),
+    transparent 0%,
+    rgb(0 0 0 / 0.2) 55%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    circle calc(var(--torch-r) * var(--inv-scale, 1)) at var(--torch-wx) var(--torch-wy),
+    transparent 0%,
+    rgb(0 0 0 / 0.2) 55%,
+    #000 100%
+  );
+}
+
+.wall__beam {
+  position: absolute;
+  inset: 0;
+  z-index: 991;
+  pointer-events: none;
+  display: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(
+    circle calc(var(--torch-r) * 0.7 * var(--inv-scale, 1)) at var(--torch-wx) var(--torch-wy),
+    rgb(255 246 222 / 0.14),
+    transparent
+  );
+}
+
+.frame[data-torch] .wall__beam {
+  display: block;
+}
+
+/* ---- Glow paper in the dark ---------------------------------------------
+   Above the darkness (990) and the beam. Like real phosphor it's brightest
+   just after the light goes and fades over the next minute; switching the
+   light back on recharges it. */
+.wall__glows {
+  position: absolute;
+  inset: 0;
+  z-index: 995;
+  pointer-events: none;
+}
+
+.frame.is-night .wall__glows {
+  animation: glow-fade 60s ease-out both;
+}
+
+.wall__glows .note--glow .note__paper {
+  background: radial-gradient(
+    120% 120% at 40% 35%,
+    color-mix(in srgb, var(--glow) 70%, #fff),
+    var(--glow) 55%,
+    color-mix(in srgb, var(--glow) 70%, #000) 100%
+  );
+  box-shadow:
+    0 0 calc(10px * var(--inv-scale, 1)) color-mix(in srgb, var(--glow) 80%, transparent),
+    0 0 calc(34px * var(--inv-scale, 1)) color-mix(in srgb, var(--glow) 45%, transparent);
+  animation: glow-charge 0.6s ease-out both;
+}
+
+.wall__glows .note--glow .note__body,
+.wall__glows .note--glow .note__hint {
+  color: color-mix(in srgb, var(--glow) 22%, #0d1a10);
+}
+
+/* Fasteners don't glow; they sit in the dark like everything else. */
+.wall__glows .fastener {
+  filter: brightness(0.3) saturate(0.6);
+}
+
+@keyframes glow-charge {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes glow-fade {
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* Things standing in the room darken with it. The bin is outside the wall's
+   shade, so it follows the same daylight-driven darkness by filter. */
+.frame.is-dark .bin__basket,
+.frame.is-dark .flight {
+  filter: brightness(calc(1 - var(--amb-room) * 0.72)) saturate(0.7);
+}
+
+/* ---- The bulb ---------------------------------------------------------- */
+
+.bulb {
+  position: absolute;
+  top: 0;
+  /* Matches the light source the vignette and shadows were drawn for. */
+  left: 30%;
+  z-index: 20;
+  transform: translateX(-50%);
+  /* Kept above the sliding wall when walls change; see wall.css. */
+  view-transition-name: bulb;
+}
+
+/* Warm pool the bulb throws on whatever's around it. */
+.bulb__glow {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    closest-side,
+    rgb(255 222 160 / 0.3),
+    rgb(255 210 140 / 0.1) 45%,
+    transparent
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.14s ease-in;
+}
+
+.bulb.is-on .bulb__glow {
+  opacity: 1;
+}
+
+.bulb__pull {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 6px 4px;
+  /* Swings from the ceiling rose, not its middle. */
+  transform-origin: 50% 0;
+  outline: none;
+}
+
+.bulb__cord {
+  width: 1.5px;
+  height: 12px;
+  background: #15120f;
+}
+
+/* Brass screw cap. */
+.bulb__socket {
+  width: 11px;
+  height: 9px;
+  border-radius: 2px 2px 1px 1px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgb(0 0 0 / 0.28) 2px 3px),
+    linear-gradient(90deg, #5e4f36, #c9b07a 42%, #7d6a48);
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.4);
+}
+
+.bulb__glass {
+  display: block;
+  margin-top: -1px;
+  overflow: visible;
+  transition: filter 0.3s ease-out;
+}
+
+.bulb.is-on .bulb__glass {
+  filter: drop-shadow(0 0 5px rgb(255 205 120 / 0.95)) drop-shadow(0 0 14px rgb(255 190 90 / 0.55));
+  transition-duration: 0.08s;
+}
+
+.bulb__shell {
+  fill: rgb(225 228 232 / 0.2);
+  stroke: rgb(255 255 255 / 0.38);
+  stroke-width: 0.8;
+}
+
+/* Off, the glass dims more slowly than it lit — a filament keeps glowing for
+   a moment after the current stops. */
+.bulb__hot {
+  fill: #fff3cc;
+  opacity: 0;
+  transition: opacity 0.4s ease-out;
+}
+
+.bulb.is-on .bulb__hot {
+  opacity: 1;
+  transition-duration: 0.08s;
+}
+
+.bulb__filament {
+  fill: none;
+  stroke: #7a6a55;
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.4s ease-out;
+}
+
+.bulb.is-on .bulb__filament {
+  stroke: #ffb648;
+}
+
+.bulb__shine {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.55);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.bulb__pull:hover .bulb__shell {
+  stroke: rgb(255 255 255 / 0.7);
+}
+
+.bulb__pull:focus-visible .bulb__glass {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+/* ---- Switching on --------------------------------------------------------
+   An incandescent bulb catches with a stutter. Darkness and glow run the same
+   timeline in opposite directions so they always agree. */
+.frame.is-warming .room__dark,
+.frame.is-warming .wall__shade {
+  animation: lamp-warm 0.55s linear both;
+}
+
+.frame.is-warming .bulb__hot,
+.frame.is-warming .bulb__glow {
+  animation: lamp-glow 0.55s linear both;
+}
+
+@keyframes lamp-warm {
+  0% { opacity: 1; }
+  10% { opacity: 0.3; }
+  18% { opacity: 0.85; }
+  32% { opacity: 0.12; }
+  42% { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+
+@keyframes lamp-glow {
+  0% { opacity: 0; }
+  10% { opacity: 0.7; }
+  18% { opacity: 0.15; }
+  32% { opacity: 0.88; }
+  42% { opacity: 0.55; }
+  100% { opacity: 1; }
+}
+
+/* Wall picker: a wall whose light is off shows up dark there too. */
+.walls__swatch.is-dark {
+  filter: brightness(0.38) saturate(0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame.is-night .wall__glows,
+  .wall__glows .note--glow .note__paper,
+  .frame.is-warming .room__dark,
+  .frame.is-warming .wall__shade,
+  .frame.is-warming .bulb__hot,
+  .frame.is-warming .bulb__glow {
+    animation: none;
+  }
+}

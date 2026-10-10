@@ -165,7 +165,7 @@ export function useDraw({ mode, color, width, strokes, onStroke, onErase }: Args
   const onPointerDown = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
       const { mode: tool, color: penColor, width: penWidth } = cfg.current;
-      if (tool === 'hand' || e.button !== 0 || active.current) return;
+      if ((tool !== 'pencil' && tool !== 'eraser') || e.button !== 0 || active.current) return;
 
       e.preventDefault();
       const svg = e.currentTarget;

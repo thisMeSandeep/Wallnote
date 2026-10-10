@@ -21,13 +21,80 @@
   pointer-events: none;
 }
 
+/* Drawn cursors so you can see which tool is in your hand. Hotspots sit
+   where the tool touches the wall: the pencil's point, the middle of the
+   eraser's rubbing edge. The white halo keeps both readable on chalkboard
+   and whiteboard alike; the keyword after each is the fallback. */
 .wall.is-pencil .ink {
-  cursor: crosshair;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E %3Cpath d='M3 25l2.5-6.5L21 3l4 4L9.5 22.5z' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linejoin='round'/%3E %3Cpath d='M5.5 18.5L17.5 6.5l4 4L9.5 22.5z' fill='%23f2c230'/%3E %3Cpath d='M7.5 20.5L19.5 8.5' stroke='%23d9a514' stroke-width='1'/%3E %3Cpath d='M17.5 6.5L19 5l4 4-1.5 1.5z' fill='%23a9adb2'/%3E %3Cpath d='M19 5l2-2 4 4-2 2z' fill='%23ea8f9d'/%3E %3Cpath d='M3 25l2.5-6.5 4 4z' fill='%23f1d3a5'/%3E %3Cpath d='M3 25l1.1-2.9 1.8 1.8z' fill='%232b2724'/%3E %3Cpath d='M3 25l2.5-6.5L21 3l4 4L9.5 22.5z' fill='none' stroke='%231d1a17' stroke-width='1.2' stroke-linejoin='round'/%3E %3C/svg%3E") 3 25, crosshair;
 }
 
 .wall.is-eraser .ink {
-  /* A round cursor that reads as the eraser's actual reach. */
-  cursor: cell;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E %3Cpath d='M2.5 17.5L13 7l8 8-10.5 10.5z' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linejoin='round'/%3E %3Cpath d='M2.5 17.5L7 13l8 8-4.5 4.5z' fill='%23f19aac'/%3E %3Cpath d='M7 13l6-6 8 8-6 6z' fill='%233f7fd6'/%3E %3Cpath d='M9.5 10.5l8 8' stroke='%23fff' stroke-width='1.6' opacity='0.85'/%3E %3Cpath d='M2.5 17.5L13 7l8 8-10.5 10.5z' fill='none' stroke='%231d1a17' stroke-width='1.2' stroke-linejoin='round'/%3E %3C/svg%3E") 6 21, cell;
+}
+
+/* ---- Red string ------------------------------------------------------
+   Over the notes (it's wound round their fasteners) and under the vignette,
+   so it picks up the same corner shading as everything else. */
+.strings {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 520;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.strings path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+/* Cast down and right, away from the bulb, like every other shadow. */
+.strings__shadow {
+  stroke: rgb(var(--shadow-tint) / 0.32);
+  stroke-width: 3;
+  transform: translate(1.5px, 3.5px);
+}
+
+.strings__yarn {
+  stroke: #b3202a;
+  stroke-width: 2.6;
+  transition: stroke 0.12s ease;
+}
+
+/* The loose end while you're pulling a string across. */
+.strings__live {
+  stroke-dasharray: none;
+  opacity: 0.85;
+}
+
+.strings__knot {
+  fill: #8f1820;
+  stroke: rgb(0 0 0 / 0.25);
+  stroke-width: 0.8;
+}
+
+/* A fat invisible stroke so a 2.6-unit string is actually clickable. */
+.strings__hit {
+  stroke: transparent;
+  stroke-width: 16;
+}
+
+.strings.is-cutting .strings__hit {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.strings.is-cutting .strings__link:hover .strings__yarn {
+  stroke: #ff5a5a;
+  stroke-dasharray: 6 5;
+}
+
+/* With string in hand, notes are things to tie, not things to move. */
+.wall.is-string .note {
+  cursor: crosshair;
 }
 
 /* ---- Tool palette ----------------------------------------------------- */
@@ -37,6 +104,8 @@
   top: 14px;
   left: 16px;
   z-index: 60;
+  /* Its own layer while walls change, so the sliding wall can't cover it. */
+  view-transition-name: tool-palette;
   display: flex;
   flex-direction: column;
   gap: 8px;

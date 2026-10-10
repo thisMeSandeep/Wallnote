@@ -1,316 +1,179 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ContextMenu, type MenuState } from './components/ContextMenu';
-import { InkLayer } from './components/InkLayer';
-import { Note } from './components/Note';
-import { StylePanel } from './components/StylePanel';
-import { ToolPalette } from './components/ToolPalette';
-import { Toolbar } from './components/Toolbar';
+import { flushSync } from 'react-dom';
 import { UpdatePrompt } from './components/UpdatePrompt';
-import { Wall } from './components/Wall';
-import { useDragNote } from './hooks/useDragNote';
-import { useDraw } from './hooks/useDraw';
-import { useHotkeys } from './hooks/useHotkeys';
-import { useResizeNote } from './hooks/useResizeNote';
-import { useWallScale } from './hooks/useWallScale';
+import { WallSwitcher } from './components/WallSwitcher';
 import { sound } from './lib/audio';
-import { newId } from './lib/id';
-import { exportWall, importWall } from './lib/storage';
-import { useWallStore } from './state/useWallStore';
 import {
-  PEN_WIDTHS,
-  SURFACE_PEN,
-  WALL_H,
-  WALL_W,
-  type Note as NoteModel,
-  type RoomKey,
-  type Stroke,
-  type SurfaceType,
-  type ToolMode,
-} from './types';
+  blankWall,
+  loadIndex,
+  newWallMeta,
+  primeWall,
+  removeWall,
+  saveIndex,
+} from './lib/storage';
+import { WallScreen } from './WallScreen';
+import type { SurfaceType, WallMeta, WallState } from './types';
+
+/**
+ * Runs a wall change inside a view transition so the old wall slides out and
+ * the new one slides in (see the ::view-transition rules in wall.css). `dir`
+ * says which way, following the picker's order. Browsers without the API, and
+ * people who asked for less motion, get the change straight away.
+ */
+function transitionWalls(dir: 'next' | 'prev', update: () => void) {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!document.startViewTransition || reduce) {
+    update();
+    return;
+  }
+  const root = document.documentElement;
+  root.dataset.wallDir = dir;
+  // flushSync so the new wall is in the DOM when the browser takes its
+  // "after" snapshot.
+  const t = document.startViewTransition(() => flushSync(update));
+  void t.finished.finally(() => delete root.dataset.wallDir);
+}
+
+/** "Wall 3", or the next free number if someone already took that name. */
+function nextWallName(walls: WallMeta[]): string {
+  const taken = new Set(walls.map((w) => w.name));
+  let n = walls.length + 1;
+  while (taken.has(`Wall ${n}`)) n++;
+  return `Wall ${n}`;
+}
 
 export default function App() {
-  const {
-    state,
-    notes,
-    dispatch,
-    commit,
-    setText,
-    canUndo,
-    canRedo,
-    storageFull,
-    dismissStorageWarning,
-  } = useWallStore();
-  const { frameRef, scale, offsetY } = useWallScale();
-
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [menu, setMenu] = useState<MenuState | null>(null);
+  const [index, setIndex] = useState(loadIndex);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
-  const [mode, setMode] = useState<ToolMode>('hand');
-  const [penColor, setPenColor] = useState(SURFACE_PEN[state.surface]);
-  const [penWidth, setPenWidth] = useState(PEN_WIDTHS[1].value);
-
-  // Reach for the instrument that suits the material: chalk on a chalkboard,
-  // marker on a whiteboard. An explicit pick sticks until the surface changes.
   useEffect(() => {
-    setPenColor(SURFACE_PEN[state.surface]);
-  }, [state.surface]);
+    saveIndex(index);
+  }, [index]);
 
+  const active = index.walls.find((w) => w.id === index.activeId) ?? index.walls[0];
+
+  useEffect(() => {
+    document.title = `${active.name} · Wallnote`;
+  }, [active.name]);
+
+  // Lives up here, not in WallScreen, so a message survives switching walls.
   const flash = useCallback((msg: string) => {
     setToast(msg);
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2400);
   }, []);
 
-  const selected = notes.find((n) => n.id === selectedId) ?? null;
-
-  /** Selecting also brings the note to the front, as grabbing paper would. */
-  const handleSelect = useCallback(
+  const switchTo = useCallback(
     (id: string) => {
-      setSelectedId(id);
-      dispatch({ type: 'RAISE', id });
+      const from = index.walls.findIndex((w) => w.id === index.activeId);
+      const to = index.walls.findIndex((w) => w.id === id);
+      if (to === -1 || from === to) return;
+      transitionWalls(to > from ? 'next' : 'prev', () =>
+        setIndex((i) => ({ ...i, activeId: id })),
+      );
+      sound.play('ui');
     },
-    [dispatch],
+    [index.walls, index.activeId],
   );
 
-  const drag = useDragNote({
-    scale,
-    // commit() runs here rather than on grab so a click that moves nothing
-    // doesn't leave an empty step on the undo stack.
-    onDrop: useCallback(
-      (id: string, x: number, y: number) => {
-        commit();
-        dispatch({ type: 'MOVE_NOTE', id, x, y });
-      },
-      [commit, dispatch],
-    ),
-    onDropOff: useCallback(
-      (id: string) => {
-        dispatch({ type: 'DELETE_NOTE', id });
-        setSelectedId((cur) => (cur === id ? null : cur));
-        flash('Note taken off the wall — Cmd+Z to put it back');
-      },
-      [dispatch, flash],
-    ),
-  });
-
-  const resize = useResizeNote({
-    scale,
-    onDone: useCallback(
-      (id, w, h) => {
-        commit();
-        dispatch({ type: 'RESIZE_NOTE', id, w, h });
-      },
-      [commit, dispatch],
-    ),
-  });
-
-  const draw = useDraw({
-    mode,
-    color: penColor,
-    width: penWidth,
-    strokes: state.strokes,
-    onStroke: useCallback(
-      (stroke: Stroke) => dispatch({ type: 'ADD_STROKE', stroke }),
-      [dispatch],
-    ),
-    onErase: useCallback((ids: string[]) => dispatch({ type: 'ERASE_STROKES', ids }), [dispatch]),
-  });
-
-  /** Turn a screen-space click into wall units. */
-  const wallPointFromEvent = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      return {
-        x: (e.clientX - rect.left) / scale,
-        y: (e.clientY - rect.top) / scale,
-      };
-    },
-    [scale],
-  );
-
-  const addNoteAt = useCallback(
-    (x: number, y: number) => {
-      // Mint the id here so the new note can be selected and opened for typing
-      // in the same commit that creates it.
-      const id = newId();
-      dispatch({ type: 'ADD_NOTE', x, y, seed: { id } });
-      setSelectedId(id);
-      setEditingId(id);
-      sound.play('stick');
-    },
-    [dispatch],
-  );
-
-  const handleWallDoubleClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      // Drawing is a flurry of fast clicks — without this, sketching would
-      // carpet the wall in empty notes.
-      if (mode !== 'hand') return;
-      const target = e.target as HTMLElement;
-      if (target.closest('.note')) return;
-      const { x, y } = wallPointFromEvent(e);
-      addNoteAt(x, y);
-    },
-    [addNoteAt, mode, wallPointFromEvent],
-  );
-
-  const handleStyle = useCallback(
-    (id: string, patch: Partial<NoteModel>) => dispatch({ type: 'SET_STYLE', id, patch }),
-    [dispatch],
-  );
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      sound.play('peel');
-      dispatch({ type: 'DELETE_NOTE', id });
-      setSelectedId((cur) => (cur === id ? null : cur));
-    },
-    [dispatch],
-  );
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedId(id);
-    setMenu({ id, x: e.clientX, y: e.clientY });
+  const createWall = useCallback((name: string, state: WallState = blankWall()) => {
+    let meta: WallMeta | undefined;
+    // New walls join the end of the list, so they always arrive from the right.
+    transitionWalls('next', () =>
+      setIndex((i) => {
+        // StrictMode runs updaters twice; minting once keeps the id stable.
+        meta ??= newWallMeta(name || nextWallName(i.walls), state);
+        primeWall(meta.id, state);
+        return { ...i, activeId: meta.id, walls: [...i.walls, meta] };
+      }),
+    );
+    sound.play('ui');
   }, []);
 
-  const handleImport = useCallback(
-    async (file: File) => {
-      const loaded = await importWall(file);
-      if (!loaded) {
-        flash("That file didn't look like a Wallnote wall");
+  const renameWall = useCallback((id: string, name: string) => {
+    setIndex((i) => ({
+      ...i,
+      walls: i.walls.map((w) => (w.id === id ? { ...w, name } : w)),
+    }));
+  }, []);
+
+  const deleteWall = useCallback(
+    (id: string) => {
+      const wall = index.walls.find((w) => w.id === id);
+      if (!wall || index.walls.length < 2) return;
+      const contents = wall.noteCount === 1 ? '1 note' : `${wall.noteCount} notes`;
+      // History is per wall and goes with it, so this one really can't be undone.
+      if (!window.confirm(`Take down "${wall.name}" and its ${contents}? This can't be undone.`)) {
         return;
       }
-      commit();
-      dispatch({ type: 'LOAD_STATE', state: loaded });
-      setSelectedId(null);
-      setEditingId(null);
-      flash(`Loaded ${loaded.notes.length} notes`);
+      removeWall(id);
+      const update = () =>
+        setIndex((i) => {
+          const at = i.walls.findIndex((w) => w.id === id);
+          const walls = i.walls.filter((w) => w.id !== id);
+          const activeId = i.activeId === id ? walls[Math.max(0, at - 1)].id : i.activeId;
+          return { ...i, activeId, walls };
+        });
+      // Taking down the wall you're on falls back to the one before it.
+      if (id === index.activeId) transitionWalls('prev', update);
+      else update();
+      sound.play('peel');
+      flash(`"${wall.name}" taken down`);
     },
-    [commit, dispatch, flash],
+    [index.walls, index.activeId, flash],
   );
 
-  useHotkeys({
-    onUndo: useCallback(() => dispatch({ type: 'UNDO' }), [dispatch]),
-    onRedo: useCallback(() => dispatch({ type: 'REDO' }), [dispatch]),
-    onDelete: useCallback(() => {
-      if (selectedId) handleDelete(selectedId);
-    }, [selectedId, handleDelete]),
-    onEscape: useCallback(() => {
-      setEditingId(null);
-      setMenu(null);
-      setMode('hand');
-    }, []),
-    onTool: useCallback((next: ToolMode) => {
-      setMode(next);
-      // Picking up a pencil implies you're done fiddling with a note.
-      if (next !== 'hand') {
-        setSelectedId(null);
-        setEditingId(null);
-      }
-      sound.play('ui');
-    }, []),
-  });
+  const toggleLight = useCallback(() => {
+    setIndex((i) => ({
+      ...i,
+      walls: i.walls.map((w) => (w.id === i.activeId ? { ...w, lightOn: !w.lightOn } : w)),
+    }));
+    sound.play('switch');
+  }, []);
 
-  useEffect(() => {
-    if (storageFull) {
-      flash('Out of browser storage — export your wall, some changes are not being saved');
-      dismissStorageWarning();
-    }
-  }, [storageFull, flash, dismissStorageWarning]);
+  const syncMeta = useCallback((id: string, surface: SurfaceType, noteCount: number) => {
+    setIndex((i) => {
+      const wall = i.walls.find((w) => w.id === id);
+      if (!wall || (wall.surface === surface && wall.noteCount === noteCount)) return i;
+      return {
+        ...i,
+        walls: i.walls.map((w) => (w.id === id ? { ...w, surface, noteCount } : w)),
+      };
+    });
+  }, []);
+
+  const importAsWall = useCallback(
+    (state: WallState, name: string) => {
+      createWall(name, state);
+      flash(`Hung "${name}" with ${state.notes.length} notes`);
+    },
+    [createWall, flash],
+  );
 
   return (
     <div className="app">
-      <Toolbar
-        surface={state.surface}
-        room={state.room}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        noteCount={state.notes.length}
-        onSurface={(s: SurfaceType) => dispatch({ type: 'SET_SURFACE', surface: s })}
-        onRoom={(r: RoomKey) => dispatch({ type: 'SET_ROOM', room: r })}
-        onAdd={() => addNoteAt(WALL_W / 2 + (Math.random() * 160 - 80), WALL_H / 2 + (Math.random() * 120 - 60))}
-        onUndo={() => dispatch({ type: 'UNDO' })}
-        onRedo={() => dispatch({ type: 'REDO' })}
-        onExport={() => exportWall(state)}
-        onImport={handleImport}
+      <WallScreen
+        // A fresh mount per wall resets undo history, selection and tools.
+        key={active.id}
+        wallId={active.id}
+        wallName={active.name}
+        lightOn={active.lightOn}
+        onToggleLight={toggleLight}
+        switcher={
+          <WallSwitcher
+            walls={index.walls}
+            activeId={active.id}
+            onSwitch={switchTo}
+            onCreate={createWall}
+            onRename={renameWall}
+            onDelete={deleteWall}
+          />
+        }
+        flash={flash}
+        onMeta={syncMeta}
+        onImport={importAsWall}
       />
-
-      <main className={`stage stage--${state.surface} stage--room-${state.room}`}>
-        <ToolPalette
-          mode={mode}
-          color={penColor}
-          width={penWidth}
-          hasInk={state.strokes.length > 0}
-          onMode={(m) => {
-            setMode(m);
-            if (m !== 'hand') {
-              setSelectedId(null);
-              setEditingId(null);
-            }
-            sound.play('ui');
-          }}
-          onColor={setPenColor}
-          onWidth={setPenWidth}
-          onClear={() => {
-            dispatch({ type: 'CLEAR_INK' });
-            sound.play('peel');
-          }}
-        />
-
-        <Wall
-          surface={state.surface}
-          scale={scale}
-          offsetY={offsetY}
-          mode={mode}
-          ink={<InkLayer strokes={state.strokes} onPointerDown={draw.onPointerDown} />}
-          frameRef={frameRef}
-          onBackgroundPointerDown={() => {
-            setSelectedId(null);
-            setEditingId(null);
-          }}
-          onBackgroundDoubleClick={handleWallDoubleClick}
-        >
-          {notes.map((note) => (
-            <Note
-              key={note.id}
-              note={note}
-              selected={note.id === selectedId}
-              editing={note.id === editingId}
-              onPointerDown={drag.onPointerDown}
-              onResizeDown={resize.onPointerDown}
-              onSelect={handleSelect}
-              onStartEdit={setEditingId}
-              onText={setText}
-              onContextMenu={handleContextMenu}
-            />
-          ))}
-        </Wall>
-
-        <StylePanel
-          note={selected}
-          onStyle={handleStyle}
-          onDelete={handleDelete}
-          onClose={() => {
-            setSelectedId(null);
-            setEditingId(null);
-          }}
-        />
-      </main>
-
-      {menu && (
-        <ContextMenu
-          menu={menu}
-          onClose={() => setMenu(null)}
-          onDuplicate={(id) => dispatch({ type: 'DUPLICATE', id })}
-          onSendToBack={(id) => dispatch({ type: 'SEND_TO_BACK', id })}
-          onDelete={handleDelete}
-        />
-      )}
 
       {toast && <div className="toast">{toast}</div>}
 

@@ -1,0 +1,294 @@
+/* ---- Things standing in the room ---------------------------------------
+   Outside the wall, in front of it: the waste-paper basket and the paper
+   balls thrown into it. */
+
+/* A screwed-up sheet. Irregular radius plus a few creases so it reads as
+   crumpled paper rather than a ball. Colour comes from the color-* class. */
+.ball {
+  border-radius: 48% 52% 45% 55% / 52% 46% 54% 48%;
+  background:
+    radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.5), transparent 42%),
+    conic-gradient(
+      from 30deg,
+      rgb(0 0 0 / 0.14),
+      transparent 12%,
+      rgb(0 0 0 / 0.2) 24%,
+      transparent 38%,
+      rgb(0 0 0 / 0.12) 52%,
+      transparent 66%,
+      rgb(0 0 0 / 0.18) 80%,
+      transparent 92%
+    ),
+    var(--paper-base);
+  box-shadow:
+    inset -3px -4px 6px rgb(0 0 0 / 0.25),
+    0 2px 3px rgb(0 0 0 / 0.35);
+}
+
+/* ---- The bin ------------------------------------------------------------ */
+
+.bin {
+  position: absolute;
+  right: 2.5%;
+  bottom: 6px;
+  z-index: 25;
+  /* Stays put, above the sliding wall, when walls change; see wall.css. */
+  view-transition-name: bin;
+}
+
+.bin__basket {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 62px;
+  transform-origin: 50% 100%;
+  transition: transform 0.15s ease;
+  filter: drop-shadow(-1px 6px 6px rgb(0 0 0 / 0.45));
+}
+
+.bin__basket:hover {
+  transform: translateY(-1px);
+}
+
+/* Any note being dragged: the basket perks up so you know it's there. */
+.bin__basket.is-ready {
+  transform: rotate(-3deg);
+}
+
+.bin__basket.is-ready .bin__mouth {
+  border-color: rgb(240 180 41 / 0.65);
+  box-shadow: 0 0 10px rgb(240 180 41 / 0.45);
+}
+
+/* A note over it: the basket leans in to catch. */
+.bin__basket.is-hungry {
+  transform: scale(1.18) rotate(-6deg);
+}
+
+.bin__basket:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* The dark inside of the basket, seen over the rim. */
+.bin__mouth {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 70%, #141416, #34363a);
+  border: 2px solid #9a9ea3;
+}
+
+/* After .is-ready so a hungry rim always wins. */
+.bin__basket.is-hungry .bin__mouth {
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 16px rgb(240 180 41 / 0.8);
+}
+
+.bin__ball {
+  position: absolute;
+  width: 21px;
+  height: 21px;
+}
+
+.bin__ball--0 {
+  left: 18px;
+  top: -7px;
+}
+.bin__ball--1 {
+  left: 30px;
+  top: -2px;
+  transform: rotate(70deg);
+}
+.bin__ball--2 {
+  left: 6px;
+  top: -1px;
+  transform: rotate(150deg);
+}
+
+/* Wire-mesh body, tapering to the floor. Sits over the balls so they only
+   peek out of the top. */
+.bin__body {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
+  background:
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.28) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0.2) 0 1px, transparent 1px 7px),
+    linear-gradient(90deg, #5d6166, #c4c8cc 38%, #9a9ea3 62%, #63676c);
+}
+
+.bin__body::before {
+  /* The rolled front lip of the rim. */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(180deg, #d9dcdf, #8a8e93);
+}
+
+/* ---- Bin contents popover ---------------------------------------------- */
+
+.bin__pop {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  width: 260px;
+  padding: 12px 10px 10px;
+  border-radius: 10px;
+  background: #2f2926;
+  border: 1px solid var(--ui-line);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+  color: var(--ui-text);
+  animation: bin-pop-in 0.15s ease-out;
+}
+
+@keyframes bin-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.bin__pop h4 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 6px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ui-dim);
+}
+
+.bin__pop ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.bin__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 6px;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ui-text);
+}
+
+.bin__item:hover {
+  background: #3a322c;
+}
+
+.bin__swatch {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: var(--paper-base);
+}
+
+.bin__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bin__restore {
+  font-size: 11px;
+  color: var(--ui-accent);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.bin__item:hover .bin__restore,
+.bin__item:focus-visible .bin__restore {
+  opacity: 1;
+}
+
+.bin__empty-msg {
+  margin: 0 6px 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ui-dim);
+}
+
+.bin__clear {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 6px;
+  border-top: 1px solid var(--ui-line);
+  border-radius: 0 0 6px 6px;
+  text-align: left;
+  font-size: 13px;
+  color: #ff8f8f;
+}
+
+.bin__clear:hover {
+  background: #3a2424;
+}
+
+/* ---- A note on its way to the bin -------------------------------------- */
+
+/* Starts as the flat sheet; useLayoutEffect in CrumpleFlight drives size,
+   shape and path. Below the bin (25) so it drops in behind the front. */
+.flight {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 24;
+  pointer-events: none;
+  background: var(--paper-base);
+  box-shadow: 0 6px 12px rgb(0 0 0 / 0.35);
+  overflow: hidden;
+}
+
+.flight__creases {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.5), transparent 42%),
+    conic-gradient(
+      from 30deg,
+      rgb(0 0 0 / 0.14),
+      transparent 12%,
+      rgb(0 0 0 / 0.2) 24%,
+      transparent 38%,
+      rgb(0 0 0 / 0.12) 52%,
+      transparent 66%,
+      rgb(0 0 0 / 0.18) 80%,
+      transparent 92%
+    );
+  box-shadow: inset -3px -4px 6px rgb(0 0 0 / 0.25);
+}
+
+@media (hover: none) {
+  .bin__restore {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bin__basket,
+  .bin__pop {
+    transition: none;
+    animation: none;
+  }
+}

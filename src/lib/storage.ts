@@ -7,14 +7,24 @@ import {
   ROOMS,
   SHAPES,
   SURFACES,
+  BIN_CAP,
+  type Link,
   type Note,
   type Stroke,
+  type WallIndex,
+  type WallMeta,
   type WallState,
 } from '../types';
 
-const KEY = 'wallnote:v1';
+/** The list of walls. Each wall's contents live under its own key. */
+const INDEX_KEY = 'wallnote:walls';
+const wallKey = (id: string) => `wallnote:wall:${id}`;
+/** Where the one and only wall lived before there could be several. */
+const SINGLE_KEY = 'wallnote:v1';
 /** Read-only fallbacks from before the rename, newest first. */
 const LEGACY_KEYS = ['wallnut:v1'];
+
+export const MAX_WALL_NAME = 40;
 
 const keysOf = <T extends { key: string }>(list: T[]) => new Set(list.map((i) => i.key));
 const SURFACE_KEYS = keysOf(SURFACES);
@@ -76,6 +86,13 @@ function coerceStroke(raw: unknown): Stroke | null {
   };
 }
 
+function coerceLink(raw: unknown): Link | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.a !== 'string' || typeof r.b !== 'string' || r.a === r.b) return null;
+  return { id: typeof r.id === 'string' && r.id ? r.id : newId(), a: r.a, b: r.b };
+}
+
 /**
  * Versioned upgrade path. Only v1 exists today, but retrofitting this once
  * people have data in localStorage is the painful path.
@@ -100,6 +117,16 @@ export function migrate(raw: unknown): WallState | null {
         // Walls saved before the pencil existed simply have no ink.
         strokes: Array.isArray(r.strokes)
           ? r.strokes.map(coerceStroke).filter((s): s is Stroke => s !== null)
+          : [],
+        // Likewise walls from before string and the bin.
+        links: Array.isArray(r.links)
+          ? r.links.map(coerceLink).filter((l): l is Link => l !== null)
+          : [],
+        binned: Array.isArray(r.binned)
+          ? r.binned
+              .map(coerceNote)
+              .filter((n): n is Note => n !== null)
+              .slice(0, BIN_CAP)
           : [],
         nextZ: Math.max(1, num(r.nextZ, notes.length + 1)),
       };
@@ -193,64 +220,208 @@ export function starterWall(): WallState {
     room: 'auto',
     notes,
     strokes: [],
+    links: [],
+    binned: [],
     nextZ: notes.length + 1,
   };
 }
 
-export function load(): WallState {
+export function blankWall(): WallState {
+  return {
+    version: 1,
+    surface: 'cork',
+    room: 'auto',
+    notes: [],
+    strokes: [],
+    links: [],
+    binned: [],
+    nextZ: 1,
+  };
+}
+
+/**
+ * Walls that exist in memory but haven't reached localStorage yet: a fresh
+ * import, or the adopted single wall when copying it hit the quota. load()
+ * looks here first, and a successful save() clears the entry.
+ */
+const unsaved = new Map<string, WallState>();
+
+/** Hands a new wall's contents to the next load() of that id. */
+export function primeWall(id: string, state: WallState): void {
+  unsaved.set(id, state);
+}
+
+export function newWallMeta(name: string, state: WallState): WallMeta {
+  return {
+    id: newId(),
+    name,
+    surface: state.surface,
+    noteCount: state.notes.length,
+    lightOn: true,
+    createdAt: Date.now(),
+  };
+}
+
+function coerceMeta(raw: unknown): WallMeta | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || !r.id) return null;
+  return {
+    id: r.id,
+    name: typeof r.name === 'string' && r.name.trim() ? r.name : 'Untitled wall',
+    surface: pick(r.surface, SURFACE_KEYS, 'cork' as const),
+    noteCount: num(r.noteCount, 0),
+    // Walls listed before the bulb was fitted have always been lit.
+    lightOn: r.lightOn !== false,
+    createdAt: num(r.createdAt, Date.now()),
+  };
+}
+
+function coerceIndex(raw: unknown): WallIndex | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (!Array.isArray(r.walls)) return null;
+  const walls = r.walls.map(coerceMeta).filter((w): w is WallMeta => w !== null);
+  if (walls.length === 0) return null;
+  const activeId = walls.some((w) => w.id === r.activeId) ? (r.activeId as string) : walls[0].id;
+  return { version: 1, activeId, walls };
+}
+
+function readSingleWall(): WallState | null {
   try {
-    let raw = localStorage.getItem(KEY);
-
-    // Adopt a wall saved under the old name. The legacy entry is left in place
-    // as a backup — the next save writes to the current key regardless.
-    if (!raw) {
-      for (const legacy of LEGACY_KEYS) {
-        raw = localStorage.getItem(legacy);
-        if (raw) break;
-      }
+    // Fall back to the wall saved under the old name, if that's all there is.
+    for (const key of [SINGLE_KEY, ...LEGACY_KEYS]) {
+      const raw = localStorage.getItem(key);
+      if (raw) return migrate(JSON.parse(raw));
     }
-
-    if (!raw) return starterWall();
-    const migrated = migrate(JSON.parse(raw));
-    return migrated ?? starterWall();
   } catch {
-    return starterWall();
+    // Corrupt data reads as no wall, same as it always has.
+  }
+  return null;
+}
+
+/**
+ * First run with more than one wall: whatever was on the single wall becomes
+ * "My wall". It's moved rather than copied — an ink-heavy wall stored twice
+ * could blow the quota — and the old key only goes once the copy has landed.
+ * The pre-rename legacy entry is still left alone as a backup.
+ */
+function adoptSingleWall(): WallIndex {
+  const state = readSingleWall() ?? starterWall();
+  const meta = newWallMeta('My wall', state);
+  const index: WallIndex = { version: 1, activeId: meta.id, walls: [meta] };
+  primeWall(meta.id, state);
+  try {
+    localStorage.setItem(wallKey(meta.id), JSON.stringify(state));
+    unsaved.delete(meta.id);
+    localStorage.setItem(INDEX_KEY, JSON.stringify(index));
+    localStorage.removeItem(SINGLE_KEY);
+  } catch {
+    // Still in `unsaved`. The wall's first save retries and reports failure.
+  }
+  return index;
+}
+
+export function loadIndex(): WallIndex {
+  try {
+    const raw = localStorage.getItem(INDEX_KEY);
+    const index = raw ? coerceIndex(JSON.parse(raw)) : null;
+    if (index) return index;
+  } catch {
+    // Fall through and rebuild from the single wall.
+  }
+  return adoptSingleWall();
+}
+
+/** The index is tiny and changes rarely, so it skips the debounce. */
+export function saveIndex(index: WallIndex): void {
+  try {
+    localStorage.setItem(INDEX_KEY, JSON.stringify(index));
+  } catch {
+    // A full quota also fails the wall saves, and those report it.
   }
 }
 
-let saveTimer: number | undefined;
+export function load(id: string): WallState {
+  const pending = unsaved.get(id);
+  if (pending) return pending;
+  try {
+    const raw = localStorage.getItem(wallKey(id));
+    return (raw && migrate(JSON.parse(raw))) || blankWall();
+  } catch {
+    return blankWall();
+  }
+}
+
+/* One timer per wall: switching walls inside the debounce must not cancel the
+   save of the wall being left. */
+const saveTimers = new Map<string, number>();
 
 /**
  * Ink is the first thing here that can grow without bound, so a failed write
  * has to be visible. Silently dropping it would mean losing a drawing session
  * with no warning at all.
  */
-export function save(state: WallState, onError?: () => void): void {
-  window.clearTimeout(saveTimer);
-  saveTimer = window.setTimeout(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {
-      onError?.();
-    }
-  }, 400);
+export function save(id: string, state: WallState, onError?: () => void): void {
+  window.clearTimeout(saveTimers.get(id));
+  saveTimers.set(
+    id,
+    window.setTimeout(() => {
+      saveTimers.delete(id);
+      try {
+        localStorage.setItem(wallKey(id), JSON.stringify(state));
+        unsaved.delete(id);
+      } catch {
+        onError?.();
+      }
+    }, 400),
+  );
 }
 
-export function exportWall(state: WallState): void {
+export function removeWall(id: string): void {
+  window.clearTimeout(saveTimers.get(id));
+  saveTimers.delete(id);
+  unsaved.delete(id);
+  try {
+    localStorage.removeItem(wallKey(id));
+  } catch {
+    // Nothing to clean up if storage is unavailable.
+  }
+}
+
+function slug(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'wall'
+  );
+}
+
+/** The name rides along in the file so an import comes back under it. */
+export function exportWall(state: WallState, name: string): void {
   const stamp = new Date().toISOString().slice(0, 10);
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ name, ...state }, null, 2)], {
+    type: 'application/json',
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `wallnote-${stamp}.json`;
+  a.download = `wallnote-${slug(name)}-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
 /** Runs imported files through the same validation path as load(). */
-export async function importWall(file: File): Promise<WallState | null> {
+export async function importWall(file: File): Promise<{ state: WallState; name: string } | null> {
   try {
-    return migrate(JSON.parse(await file.text()));
+    const raw: unknown = JSON.parse(await file.text());
+    const state = migrate(raw);
+    if (!state) return null;
+    const saved = (raw as Record<string, unknown>).name;
+    const name =
+      typeof saved === 'string' && saved.trim() ? saved.trim() : file.name.replace(/\.json$/i, '');
+    return { state, name: name.slice(0, MAX_WALL_NAME) || 'Imported wall' };
   } catch {
     return null;
   }

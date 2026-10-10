@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { WALL_H, WALL_W } from '../types';
 
 /** The wall fills this share of the stage; the remainder is room around it. */
@@ -15,7 +15,9 @@ export function useWallScale() {
   const frameRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState({ scale: 1, offsetY: 0 });
 
-  useEffect(() => {
+  // Layout effect, not a plain one: a wall mounting fresh (switching walls)
+  // would otherwise paint one frame at scale 1 before snapping to fit.
+  useLayoutEffect(() => {
     const el = frameRef.current;
     if (!el) return;
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { newId } from '../lib/id';
 import { load, save } from '../lib/storage';
 import {
+  BIN_CAP,
   SHAPES,
   type Note,
   type RoomKey,
@@ -25,7 +26,10 @@ export type Action =
   | { type: 'ADD_STROKE'; stroke: Stroke }
   | { type: 'ERASE_STROKES'; ids: string[] }
   | { type: 'CLEAR_INK' }
-  | { type: 'LOAD_STATE'; state: WallState };
+  | { type: 'RESTORE_NOTE'; id: string }
+  | { type: 'EMPTY_BIN' }
+  | { type: 'ADD_LINK'; a: string; b: string }
+  | { type: 'CUT_LINK'; id: string };
 
 interface History {
   past: WallState[];
@@ -48,7 +52,6 @@ const TRANSIENT: Action['type'][] = [
   'RESIZE_NOTE',
   'SET_TEXT',
   'RAISE',
-  'LOAD_STATE',
 ];
 
 function tilt(): number {
@@ -60,6 +63,16 @@ function mapNote(state: WallState, id: string, fn: (n: Note) => Note): WallState
     ...state,
     notes: state.notes.map((n) => (n.id === id ? { ...fn(n), updatedAt: Date.now() } : n)),
   };
+}
+
+/**
+ * Drops string whose ends are gone for good. A note in the bin keeps its
+ * strings, so fishing it back out ties them back up.
+ */
+function pruneLinks(state: WallState): WallState {
+  const ids = new Set([...state.notes, ...state.binned].map((n) => n.id));
+  const links = state.links.filter((l) => ids.has(l.a) && ids.has(l.b));
+  return links.length === state.links.length ? state : { ...state, links };
 }
 
 function reduce(state: WallState, action: Action): WallState {
@@ -135,8 +148,50 @@ function reduce(state: WallState, action: Action): WallState {
       return { ...state, notes: [...state.notes, copy], nextZ: state.nextZ + 1 };
     }
 
-    case 'DELETE_NOTE':
-      return { ...state, notes: state.notes.filter((n) => n.id !== action.id) };
+    // Taken off the wall means into the bin, not gone.
+    case 'DELETE_NOTE': {
+      const note = state.notes.find((n) => n.id === action.id);
+      if (!note) return state;
+      return pruneLinks({
+        ...state,
+        notes: state.notes.filter((n) => n.id !== action.id),
+        binned: [note, ...state.binned].slice(0, BIN_CAP),
+      });
+    }
+
+    case 'RESTORE_NOTE': {
+      const note = state.binned.find((n) => n.id === action.id);
+      if (!note) return state;
+      return {
+        ...state,
+        notes: [...state.notes, { ...note, z: state.nextZ, rotation: tilt(), updatedAt: Date.now() }],
+        binned: state.binned.filter((n) => n.id !== action.id),
+        nextZ: state.nextZ + 1,
+      };
+    }
+
+    case 'EMPTY_BIN':
+      return state.binned.length === 0 ? state : pruneLinks({ ...state, binned: [] });
+
+    case 'ADD_LINK': {
+      const { a, b } = action;
+      if (a === b) return state;
+      const tied = state.links.some(
+        (l) => (l.a === a && l.b === b) || (l.a === b && l.b === a),
+      );
+      if (tied) return state;
+      return {
+        ...state,
+        // String needs something to wrap round: bare paper gets a pin.
+        notes: state.notes.map((n) =>
+          (n.id === a || n.id === b) && n.fastener === 'none' ? { ...n, fastener: 'pin' } : n,
+        ),
+        links: [...state.links, { id: newId(), a, b }],
+      };
+    }
+
+    case 'CUT_LINK':
+      return { ...state, links: state.links.filter((l) => l.id !== action.id) };
 
     case 'SET_SURFACE':
       return { ...state, surface: action.surface };
@@ -154,9 +209,6 @@ function reduce(state: WallState, action: Action): WallState {
 
     case 'CLEAR_INK':
       return state.strokes.length === 0 ? state : { ...state, strokes: [] };
-
-    case 'LOAD_STATE':
-      return action.state;
   }
 }
 
@@ -203,10 +255,14 @@ function historyReducer(h: History, action: HistoryAction): History {
   }
 }
 
-export function useWallStore() {
+/**
+ * One wall's state and undo history. The caller remounts this per wall (via a
+ * React key), so history never leaks from one wall into another.
+ */
+export function useWallStore(wallId: string) {
   const [history, raw] = useReducer(historyReducer, undefined, () => ({
     past: [],
-    present: load(),
+    present: load(wallId),
     future: [],
   }));
 
@@ -214,8 +270,8 @@ export function useWallStore() {
   const [storageFull, setStorageFull] = useState(false);
 
   useEffect(() => {
-    save(state, () => setStorageFull(true));
-  }, [state]);
+    save(wallId, state, () => setStorageFull(true));
+  }, [wallId, state]);
 
   const textTimer = useRef<number | undefined>(undefined);
   const pendingText = useRef<string | null>(null);

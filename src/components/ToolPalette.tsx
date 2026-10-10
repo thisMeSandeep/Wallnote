@@ -57,6 +57,25 @@ const TOOLS: { key: ToolMode; label: string; hint: string; icon: JSX.Element }[]
       />
     ),
   },
+  {
+    key: 'string',
+    label: 'String',
+    hint: 'Tie notes together with red string — drag from one note to another, click a string to cut it  ·  S',
+    icon: (
+      <>
+        <circle cx="5" cy="5" r="2" fill="currentColor" />
+        <circle cx="15" cy="9" r="2" fill="currentColor" />
+        <path
+          d="M5 5q4 8 10 4M15 9q-4 9-10 7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+        />
+        <circle cx="5" cy="16" r="2" fill="currentColor" />
+      </>
+    ),
+  },
 ];
 
 /**
@@ -124,7 +143,7 @@ export function ToolPalette({
         </div>
       )}
 
-      {mode !== 'hand' && hasInk && (
+      {(mode === 'pencil' || mode === 'eraser') && hasInk && (
         <button className="palette__clear" onClick={onClear} title="Undo brings it back">
           Wipe the wall
         </button>

@@ -117,6 +117,8 @@
 }
 
 .wall {
+  /* Lifted into its own layer while walls change — see the end of the file. */
+  view-transition-name: wall;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -185,6 +187,7 @@
 }
 
 .toast {
+  view-transition-name: toast;
   position: fixed;
   bottom: 26px;
   left: 50%;
@@ -203,5 +206,88 @@
   from {
     opacity: 0;
     transform: translate(-50%, 8px);
+  }
+}
+
+/* ---- Changing walls ----------------------------------------------------
+   App wraps a wall change in a view transition. The wall slides like a board
+   being swapped along a rail: out one side, the next in from the other, with
+   data-wall-dir saying which way. The room behind crossfades underneath, so a
+   change of surface tint blends rather than cuts. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.42s;
+  animation-timing-function: ease;
+}
+
+::view-transition-group(wall) {
+  animation-duration: 0.42s;
+}
+
+::view-transition-old(toolbar) {
+  display: none;
+}
+
+::view-transition-new(toolbar) {
+  animation: none;
+}
+
+/* Everything that floats over the wall stays over it mid-slide. Groups stack
+   in capture order otherwise, which can put these underneath. */
+::view-transition-group(toolbar),
+::view-transition-group(tool-palette),
+::view-transition-group(bulb),
+::view-transition-group(bin),
+::view-transition-group(wall-picker),
+::view-transition-group(toast),
+::view-transition-group(sw-pill) {
+  z-index: 1;
+}
+
+::view-transition-old(wall-picker) {
+  animation-duration: 0.15s;
+}
+
+::view-transition-old(wall) {
+  animation: wall-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(wall) {
+  animation: wall-in 0.38s cubic-bezier(0.2, 0, 0, 1) 0.06s both;
+}
+
+:root[data-wall-dir='prev']::view-transition-old(wall) {
+  animation-name: wall-out-prev;
+}
+
+:root[data-wall-dir='prev']::view-transition-new(wall) {
+  animation-name: wall-in-prev;
+}
+
+@keyframes wall-out {
+  to {
+    opacity: 0;
+    transform: translateX(-7%) scale(0.965);
+  }
+}
+
+@keyframes wall-in {
+  from {
+    opacity: 0;
+    transform: translateX(7%) scale(0.965);
+  }
+}
+
+@keyframes wall-out-prev {
+  to {
+    opacity: 0;
+    transform: translateX(7%) scale(0.965);
+  }
+}
+
+@keyframes wall-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-7%) scale(0.965);
   }
 }

@@ -15,6 +15,11 @@ export type SoundName =
   | 'pin'
   | 'tape'
   | 'magnet'
+  | 'switch' // the light's pull cord
+  | 'crumple' // a note balled up
+  | 'bin' // and landing in the basket
+  | 'tie' // string pulled taut between two pins
+  | 'snip' // string cut
   | 'ui'; // toggles and small chrome
 
 const STORAGE_KEY = 'wallnote:sound';
@@ -199,6 +204,44 @@ class SoundEngine {
       case 'magnet':
         this.tone({ freq: rand(190, 230), endFreq: 90, dur: 0.075, gain: 0.26 });
         this.noise({ dur: 0.03, freq: 1400, q: 1.5, gain: 0.12 });
+        break;
+
+      // Pull-cord switch: the cord's tug, then the mechanism snapping over.
+      case 'switch':
+        this.noise({ dur: 0.03, freq: 2400, q: 1.2, gain: 0.1 });
+        this.tone({ freq: rand(1700, 1900), endFreq: 1100, dur: 0.022, gain: 0.2, type: 'square', delay: 0.045 });
+        this.noise({ dur: 0.025, freq: 3600, q: 0.9, gain: 0.16, delay: 0.045 });
+        break;
+
+      // A fistful of short, bright crackles rather than one long rustle.
+      case 'crumple':
+        for (let i = 0; i < 7; i++) {
+          this.noise({
+            dur: rand(0.02, 0.05),
+            freq: rand(1500, 4200),
+            q: 1.4,
+            gain: rand(0.12, 0.24),
+            delay: i * 0.034 + rand(0, 0.014),
+          });
+        }
+        break;
+
+      // Paper ball into a wire basket: soft thump, faint metal ring.
+      case 'bin':
+        this.noise({ dur: 0.06, freq: rand(800, 1000), q: 1, gain: 0.18 });
+        this.tone({ freq: rand(1300, 1500), endFreq: 1250, dur: 0.22, gain: 0.05, type: 'triangle', delay: 0.01 });
+        break;
+
+      // Yarn pulled taut: a low pluck that drops slightly as it settles.
+      case 'tie':
+        this.tone({ freq: rand(210, 240), endFreq: 190, dur: 0.2, gain: 0.16, type: 'triangle' });
+        this.noise({ dur: 0.03, freq: 2600, q: 1, gain: 0.08 });
+        break;
+
+      // Two quick scissor bites.
+      case 'snip':
+        this.noise({ dur: 0.025, freq: 5200, q: 2, gain: 0.2 });
+        this.noise({ dur: 0.025, freq: 4600, q: 2, gain: 0.16, delay: 0.06 });
         break;
 
       case 'ui':

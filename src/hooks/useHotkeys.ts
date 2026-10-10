@@ -7,9 +7,10 @@ interface Args {
   onDelete: () => void;
   onEscape: () => void;
   onTool: (mode: ToolMode) => void;
+  onLight: () => void;
 }
 
-const TOOL_KEYS: Record<string, ToolMode> = { v: 'hand', p: 'pencil', e: 'eraser' };
+const TOOL_KEYS: Record<string, ToolMode> = { v: 'hand', p: 'pencil', e: 'eraser', s: 'string' };
 
 /** Ignores keys typed while the caret is inside a note. */
 function isTyping(target: EventTarget | null): boolean {
@@ -18,7 +19,7 @@ function isTyping(target: EventTarget | null): boolean {
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 }
 
-export function useHotkeys({ onUndo, onRedo, onDelete, onEscape, onTool }: Args) {
+export function useHotkeys({ onUndo, onRedo, onDelete, onEscape, onTool, onLight }: Args) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -42,7 +43,13 @@ export function useHotkeys({ onUndo, onRedo, onDelete, onEscape, onTool }: Args)
         return;
       }
 
-      // Single-letter tool switches, but never while writing on a note.
+      // Single-letter switches below, but never while writing on a note.
+      if (!mod && !e.altKey && !isTyping(e.target) && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        onLight();
+        return;
+      }
+
       const tool = !mod && !e.altKey && !isTyping(e.target) && TOOL_KEYS[e.key.toLowerCase()];
       if (tool) {
         e.preventDefault();
@@ -52,5 +59,5 @@ export function useHotkeys({ onUndo, onRedo, onDelete, onEscape, onTool }: Args)
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onUndo, onRedo, onDelete, onEscape, onTool]);
+  }, [onUndo, onRedo, onDelete, onEscape, onTool, onLight]);
 }

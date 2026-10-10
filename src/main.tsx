@@ -19,6 +19,8 @@ import './styles/surfaces.css';
 import './styles/note.css';
 import './styles/papers.css';
 import './styles/ink.css';
+import './styles/light.css';
+import './styles/room.css';
 import './styles/ui.css';
 
 createRoot(document.getElementById('root')!).render(

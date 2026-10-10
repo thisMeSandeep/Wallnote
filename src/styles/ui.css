@@ -1,4 +1,7 @@
 .toolbar {
+  /* Swaps instantly when walls change rather than crossfading — two wall
+     names ghosted over each other just reads as a glitch. */
+  view-transition-name: toolbar;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -199,18 +202,6 @@
   cursor: default;
 }
 
-.btn--primary {
-  background: var(--ui-accent);
-  border-color: var(--ui-accent);
-  color: #1a1505;
-  font-weight: 600;
-}
-
-.btn--primary:hover:not(:disabled) {
-  background: #ffc53d;
-  border-color: #ffc53d;
-}
-
 .btn--danger {
   width: 100%;
   margin-top: 4px;
@@ -235,15 +226,247 @@
   transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.iconbtn:hover {
+.iconbtn:hover:not(:disabled) {
   background: #3f3730;
   color: var(--ui-text);
 }
 
-.iconbtn.is-on {
+.iconbtn:disabled {
+  opacity: 0.36;
+  cursor: default;
+}
+
+/* The one action people come for gets the accent, as "+ Note" had. */
+.iconbtn--primary {
+  color: #1a1505;
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+}
+
+.iconbtn--primary:hover:not(:disabled) {
+  color: #1a1505;
+  background: #ffc53d;
+  border-color: #ffc53d;
+}
+
+.iconbtn.is-on,
+.iconbtn.is-on:hover:not(:disabled) {
   color: var(--ui-accent);
   border-color: #5c4a1e;
   background: #3a3320;
+}
+
+/* ---- Wall picker ----------------------------------------------------- */
+
+.walls {
+  position: relative;
+}
+
+.walls__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  max-width: 220px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ui-line);
+  background: #332c27;
+  color: var(--ui-text);
+  font-size: 13px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.walls__trigger:hover,
+.walls__trigger.is-open {
+  background: #3f3730;
+  border-color: #524940;
+}
+
+.walls__current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.walls__chevron {
+  flex-shrink: 0;
+  color: var(--ui-dim);
+}
+
+/* A thumbnail of the wall's material, borrowing the surface swatch fills. */
+.walls__swatch {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  outline: 1px solid rgb(255 255 255 / 0.16);
+}
+
+.walls__pop {
+  /* Deleting the wall you're on transitions with the list still open; its
+     own layer lets it fade out over the departing wall, not behind it. */
+  view-transition-name: wall-picker;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 270px;
+  padding: 12px 10px 10px;
+  border-radius: 10px;
+  background: #2f2926;
+  border: 1px solid var(--ui-line);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+  animation: walls-in 0.15s ease-out;
+}
+
+@keyframes walls-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.walls__pop h4 {
+  margin: 0 6px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ui-dim);
+}
+
+.walls__pop ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.walls__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 6px;
+}
+
+.walls__row:hover {
+  background: #3a322c;
+}
+
+.walls__row.is-active {
+  background: #43381f;
+}
+
+.walls__pick {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 6px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ui-text);
+}
+
+.walls__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.walls__row.is-active .walls__name {
+  font-weight: 600;
+}
+
+.walls__count {
+  font-size: 11px;
+  color: var(--ui-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rename and delete stay out of the way until you're on the row. */
+.walls__icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  color: var(--ui-dim);
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.walls__row:hover .walls__icon,
+.walls__row:focus-within .walls__icon {
+  opacity: 1;
+}
+
+.walls__icon:hover:not(:disabled) {
+  background: #4a4037;
+  color: var(--ui-text);
+}
+
+.walls__icon--danger:hover:not(:disabled) {
+  color: #ff8f8f;
+}
+
+.walls__icon:disabled {
+  cursor: default;
+}
+
+.walls__row:hover .walls__icon:disabled {
+  opacity: 0.3;
+}
+
+.walls__input {
+  flex: 1;
+  min-width: 0;
+  margin: 3px 0;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--ui-accent);
+  background: #1f1b18;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.walls__foot {
+  display: flex;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ui-line);
+}
+
+.walls__new {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ui-accent);
+}
+
+.walls__new:hover {
+  background: #3a322c;
+}
+
+@media (hover: none) {
+  /* No hover on touch, so the row actions have to be visible to be usable. */
+  .walls__icon {
+    opacity: 1;
+  }
+
+  .walls__icon:disabled {
+    opacity: 0.3;
+  }
 }
 
 /* ---- Shortcuts help -------------------------------------------------- */
@@ -561,6 +784,7 @@
 /* ---- Service worker pill --------------------------------------------- */
 
 .swpill {
+  view-transition-name: sw-pill;
   position: fixed;
   left: calc(16px + env(safe-area-inset-left));
   bottom: calc(16px + env(safe-area-inset-bottom));
@@ -609,6 +833,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .walls__pop {
+    animation: none;
+  }
+
   .panel,
   .frame,
   .stage,

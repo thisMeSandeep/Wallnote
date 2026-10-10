@@ -1,12 +1,46 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { sound } from '../lib/audio';
 import { clampToWall, isOffWall, toWallUnits } from '../lib/geometry';
 import type { Note } from '../types';
 
 interface Args {
   scale: number;
+  /** Dropping onto the bin takes a note down even while it's over the wall. */
+  binRef: RefObject<HTMLElement>;
+  /** Every frame of the drag, so whatever's tied to the note can follow. */
+  onMove: (id: string, x: number, y: number) => void;
   onDrop: (id: string, x: number, y: number) => void;
   onDropOff: (id: string) => void;
+  /** Pressed and released without moving: a click, not a drag. */
+  onTap: (id: string) => void;
+}
+
+/** Slack around the basket for the pointer, in screen pixels. */
+const BIN_REACH = 28;
+/** Share of the basket the dragged note has to cover to count. */
+const BIN_COVER = 0.3;
+
+/**
+ * Generous on purpose. People aim the note at the bin, not the cursor — grab
+ * a sheet by its corner and drop the paper over the basket and the pointer
+ * can be well off it. So covering a good part of the basket counts, as does
+ * the pointer getting anywhere near it.
+ */
+function isOverBin(bin: HTMLElement | null, note: HTMLElement, x: number, y: number): boolean {
+  if (!bin) return false;
+  const b = bin.getBoundingClientRect();
+  if (
+    x >= b.left - BIN_REACH &&
+    x <= b.right + BIN_REACH &&
+    y >= b.top - BIN_REACH &&
+    y <= b.bottom + BIN_REACH
+  ) {
+    return true;
+  }
+  const n = note.getBoundingClientRect();
+  const w = Math.min(n.right, b.right) - Math.max(n.left, b.left);
+  const h = Math.min(n.bottom, b.bottom) - Math.max(n.top, b.top);
+  return w > 0 && h > 0 && (w * h) / (b.width * b.height) >= BIN_COVER;
 }
 
 interface Active {
@@ -35,15 +69,15 @@ interface Active {
  * window, the note unmounting) would leave the drag record live and let a
  * later hover over *any* note resume dragging the stale one.
  */
-export function useDragNote({ scale, onDrop, onDropOff }: Args) {
+export function useDragNote({ scale, binRef, onMove, onDrop, onDropOff, onTap }: Args) {
   const active = useRef<Active | null>(null);
 
   // Window listeners are attached once and must not close over stale props.
   const scaleRef = useRef(scale);
-  const cbs = useRef({ onDrop, onDropOff });
+  const cbs = useRef({ onMove, onDrop, onDropOff, onTap });
   useEffect(() => {
     scaleRef.current = scale;
-    cbs.current = { onDrop, onDropOff };
+    cbs.current = { onMove, onDrop, onDropOff, onTap };
   });
 
   const apply = useCallback((a: Active, clientX: number, clientY: number) => {
@@ -53,10 +87,15 @@ export function useDragNote({ scale, onDrop, onDropOff }: Args) {
       // Only once the note actually leaves its spot — a click that merely
       // selects shouldn't rustle.
       sound.play('lift');
+      // The bin perks up for the length of any drag, so it reads as a place
+      // the note can go before you're anywhere near it.
+      binRef.current?.classList.add('is-ready');
     }
 
     const raw = { x: a.originX + dx, y: a.originY + dy };
-    const off = isOffWall(raw.x, raw.y, a.note.w, a.note.h);
+    const overBin = isOverBin(binRef.current, a.el, clientX, clientY);
+    binRef.current?.classList.toggle('is-hungry', overBin);
+    const off = overBin || isOffWall(raw.x, raw.y, a.note.w, a.note.h);
     const next = off ? raw : clampToWall(raw.x, raw.y, a.note.w, a.note.h);
 
     a.x = next.x;
@@ -66,7 +105,8 @@ export function useDragNote({ scale, onDrop, onDropOff }: Args) {
       a.el.classList.toggle('is-peeling', off);
     }
     a.el.style.transform = `translate(${next.x}px, ${next.y}px) rotate(${a.note.rotation}deg)`;
-  }, []);
+    cbs.current.onMove(a.id, next.x, next.y);
+  }, [binRef]);
 
   /** Ends the gesture. `commit: false` abandons it and restores the note. */
   const finish = useCallback((commit: boolean) => {
@@ -74,21 +114,25 @@ export function useDragNote({ scale, onDrop, onDropOff }: Args) {
     if (!a) return;
     active.current = null;
     a.el.classList.remove('is-lifted', 'is-peeling');
+    binRef.current?.classList.remove('is-hungry', 'is-ready');
     document.body.classList.remove('is-dragging');
 
     if (!commit) {
       // Put it back where it started — a cancelled drag shouldn't move anything.
       a.el.style.transform = `translate(${a.originX}px, ${a.originY}px) rotate(${a.note.rotation}deg)`;
+      cbs.current.onMove(a.id, a.originX, a.originY);
       return;
     }
     if (a.off) {
-      sound.play('peel');
+      // The crumple makes its own noise.
       cbs.current.onDropOff(a.id);
     } else if (a.moved) {
       sound.play('place');
       cbs.current.onDrop(a.id, a.x, a.y);
+    } else {
+      cbs.current.onTap(a.id);
     }
-  }, []);
+  }, [binRef]);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
